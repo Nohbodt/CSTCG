@@ -14,7 +14,7 @@ const PACKS = {
 		"color": Color("f0804b"), "base_weights": [65, 28, 6, 1], "last_weights": [0, 80, 18, 2],
 		"guarantee": "1 RARE OR BETTER", "short": "The foundation of your next five."},
 	"elite": {"name": "ELITE CIRCUIT", "subtitle": "For the moments that define a club.", "price": 600,
-		"color": Color("b5a0ff"), "base_weights": [30, 50, 17, 3], "last_weights": [0, 0, 90, 10],
+		"color": Color("ddb56e"), "base_weights": [30, 50, 17, 3], "last_weights": [0, 0, 90, 10],
 		"guarantee": "1 EPIC OR BETTER", "short": "Bigger stages. Exceptional talent."}
 }
 

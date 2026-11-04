@@ -6,11 +6,11 @@ For portable builds and a short test walkthrough, see [TESTING.md](TESTING.md). 
 
 **Open packs → build a five-player lineup → choose tactics → play the circuit → earn your next signing.**
 
-Alpha 0.2 adds a pre-match choice, full 3D Dust II matches, half-reward quick results, real player identities, and saved match resume. See [the current build notes](docs/ALPHA_0_2.md).
+Alpha 0.3 refreshes the club menus with consistent CSTCG styling, searchable cards and player profiles, clearer pack recovery, and dialogs that fit both supported window sizes. See [the menu update](docs/UI_PASS_0_3.md). Full Dust II matches, half-reward quick results, real player identities, and saved match resume remain as documented in [alpha 0.2](docs/ALPHA_0_2.md).
 
 The next launch collection is specified in the [CSTCG Series 1 design kit](docs/series_1/DESIGN_SPEC.md): Alpha, Bravo, Elite and Beta Event, each with a 50-card pool. Browse the [interactive 90-card catalogue](docs/series_1/index.html) or the [printable lookbook](docs/series_1/CSTCG_Series_1_Design_Lookbook.pdf). These are content/art specifications; the playable alpha catalogue is unchanged.
 
-![The pack room](docs/screenshots/pack-room.png)
+![The refreshed pack room](docs/screenshots/menu-0.3/packs.png)
 
 ## Play
 
@@ -29,18 +29,18 @@ godot --editor --path .
 
 Press **F6/F5** to play the current/main scene, or run `godot --path .` directly. Graphical play requires a desktop display. On your own desktop, import `project.godot` through Godot's project manager; the cloud-specific XDG paths are unnecessary.
 
-You start with a complete lineup, one spare YEKINDAR, **800 credits**, and **two Contender packs**. Start in Pack room, open a pack, then use My squad to add a new player. The in-game **How to play** screen explains the full loop.
+You start with a complete lineup, one spare YEKINDAR, **800 credits**, and **two Contender packs**. Open **Packs**, reveal a pack, then use **Squad** to add a new player. **Help & settings** explains the full loop and opens the map tools.
 
 ## Included
 
-- Six connected screens: Overview, My squad, Pack room, Collection, Match room, and Trade desk.
+- Six connected screens: Overview, Squad, Packs, Collection, Matches, and Trades, grouped into club and collection navigation.
 - Thirty real public player identities across five assigned roles and four rarities, with custom alpha stats and neutral nameplates.
 - Contender and Elite packs, sealed wrappers, a tear-open transition, sequential reveals, duplicate/NEW labels, guaranteed slots, and published odds.
-- Roster substitutions, collection filters, spare-card releases, and confirmed one-for-one AI trades.
+- Roster substitutions, searchable/sortable collection filters, clickable player profiles, spare-card releases, and confirmed one-for-one AI trades.
 - A pre-match choice: play an automatic 3D Dust II match for full rewards, or use the quick simulation for half credits/XP. Both support MR12/MR3 overtime, saved reports and milestone packs.
 - Transactional local saves; pack reveals resume with their original contents, and played matches resume from the current round’s start without rerolling it. Earlier clubs migrate with a backup.
-- A reduced-motion switch, mouse and keyboard button navigation, and responsive viewport scaling.
-- A [Dust II 3D map lab](docs/MAP_INTEGRATION.md) using the supplied STL, with navigation, collision-checked movement probes, and eye-height sightline tools. Open it from Match room or run `godot --path . --scene res://scenes/spatial_lab.tscn`.
+- A saved reduced-motion preference, visible keyboard focus, Escape-to-close dialogs, and layouts that resize without shrinking the text.
+- A [Dust II 3D map lab](docs/MAP_INTEGRATION.md) using the supplied STL, with navigation, collision-checked movement probes, and eye-height sightline tools. Open it from **Help & settings → Open 3D map lab** or run `godot --path . --scene res://scenes/spatial_lab.tscn`.
 
 Read the reconciled [Master GDD v3.0](docs/ESPORTS_CSTCG_Master_GDD_v3_0.md) for the recommended full game: Ultimate Team-style collecting combined with tactical club management. [Merge notes](docs/DESIGN_MERGE_NOTES.md) identify changes to the old design. The [alpha 0.2 notes](docs/ALPHA_0_2.md) document the current match rules and real-player roster. The [older prototype specification](docs/GAME_DESIGN.md) is historical; the master GDD is a design proposal, not an implemented feature list. [Architecture](docs/ARCHITECTURE.md) explains the existing code.
 

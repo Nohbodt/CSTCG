@@ -78,7 +78,7 @@ func _build_ui() -> void:
 	margin.add_child(shell)
 	var header = U.hbox(18)
 	var title = U.vbox(3)
-	title.add_child(U.label("C / C    THE OPEN CIRCUIT", 10, U.ORANGE, true))
+	title.add_child(U.label("CSTCG / THE OPEN CIRCUIT", 10, U.ORANGE, true))
 	title.add_child(U.label("DUST II", 28, U.TEXT, true))
 	header.add_child(title)
 	header.add_child(U.spacer())

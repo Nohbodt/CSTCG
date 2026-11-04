@@ -12,19 +12,21 @@ On Linux, the portable build runs with `./CSTCG.x86_64` after extracting its arc
 
 ## Suggested first test
 
-1. Open **Pack room**. You begin with two Contender packs and 800 credits.
-2. Open a pack, tear the wrapper, reveal its five cards, and select **Build your five**.
+1. Open **Packs**. You begin with two Contender packs and 800 credits.
+2. Open a pack, tear the wrapper, reveal one card, then press **Escape**. **Resume opening** should return to the same secured cards and reveal position. Reveal the rest and select **Build your five**.
 3. Add a new player to the lineup. The previous player should remain in your collection.
-4. Try a local AI trade at **Trade desk**. The last copy of an active player stays protected.
-5. Set a tactic in **Match room**, then select **Play match**. Cancel the choice once; your match count and wallet should stay unchanged.
-6. Select **Play out match**. Watch the automatic Dust II match, follow a player, change cameras, pause, and change speed. At full time, check full rewards: 160 CR / 100 XP for a win or 85 CR / 60 XP for a loss.
-7. For the next fixture choose **Skip to result (less rewards)**. The report appears immediately, with 80 CR / 50 XP for a win or 43 CR / 30 XP for a loss. Viewing this report again must not repeat its payout.
-8. Start another played match. After a completed round, return to the club and reopen the match. Its current round restarts with the same seed; the previous score remains. Reopening the whole app should also preserve it.
-9. Open **Match room → Open 3D map lab**. Try an overhead/angled view, select a route, and use **Reset & walk route**.
-10. In the map lab, Shift-click two walkable surfaces to inspect a sightline. Middle-drag pans; the wheel zooms; V changes the view.
-11. Return to the club, close the game, and reopen it. Your cards, credits, lineup, and match history should remain.
+4. Search **Collection** by player handle or real name. Clear the filters, inspect a card, use **Tab** within the dialog, then press **Escape** to return focus to that card.
+5. Try a local AI trade at **Trades**. The last copy of an active player stays protected.
+6. Set a tactic in **Matches**, then select **Play match**. Cancel the choice once; your match count and wallet should stay unchanged.
+7. Select **Play out match**. Watch the automatic Dust II match, follow a player, change cameras, pause, and change speed. At full time, check full rewards: 160 CR / 100 XP for a win or 85 CR / 60 XP for a loss.
+8. For the next fixture choose **Skip to result (less rewards)**. The report appears immediately, with 80 CR / 50 XP for a win or 43 CR / 30 XP for a loss. Viewing this report again must not repeat its payout.
+9. Start another played match. After a completed round, return to the club and reopen the match. Its current round restarts with the same seed; the previous score remains. Reopening the whole app should also preserve it.
+10. Open **Help & settings → Open 3D map lab**. Try an overhead/angled view, select a route, and use **Reset & walk route**.
+11. In the map lab, Shift-click two walkable surfaces to inspect a sightline. Middle-drag pans; the wheel zooms; V changes the view.
+12. Return to the club, resize to 1100×740, and check the menus, player profile, pack reveal, and match choice. Primary actions should fit, with longer pages scrolling vertically.
+13. Enable **Reduce motion**, close the game, and reopen it. Your preference, cards, credits, lineup, and match history should remain.
 
-Dust II is the alpha's only match map. The separate map lab remains a geometry tool and does not affect your club. Played matches use causal movement, combat and bomb objectives; skipped matches use the original aggregate simulation. See [alpha 0.2 notes](docs/ALPHA_0_2.md) in the source ZIP for details. Real public player identities have custom alpha roles/stats and neutral monograms; photographic portraits are not bundled. Trades use local AI managers. The v3 GDD describes the fuller proposed game.
+This is **alpha 0.3**, the menu refresh. The playable collection remains thirty players with Contender and Elite Circuit packs; the four Series 1 products are design specifications. Dust II is the alpha's only match map. The separate map lab remains a geometry tool and does not affect your club. Played matches use causal movement, combat and bomb objectives; skipped matches use the original aggregate simulation. See [menu notes](docs/UI_PASS_0_3.md) and [match rules](docs/ALPHA_0_2.md) in the source ZIP. Real public player identities have custom alpha roles/stats and neutral monograms; photographic portraits are not bundled. Trades use local AI managers.
 
 ## Saves and reports
 

@@ -10,7 +10,8 @@
 | `scripts/match_simulator.gd` | Seeded aggregate round simulation used by Skip to result |
 | `scripts/main.gd` | UI routing, state presentation, confirmations, pack reveal, pre-match chooser, saved reports |
 | `scripts/ui.gd` | Shared theme, typography, colors, controls |
-| `scripts/card_art.gd`, `pack_art.gd`, `arena_art.gd` | Optional photographic cards with neutral fallback, printed pack art, abstract decorative battlefield |
+| `scripts/card_art.gd`, `pack_art.gd`, `arena_art.gd` | Optional photographic cards with neutral fallback, printed pack art, rendered Dust II menu artwork |
+| `tools/capture_menu_map.gd`, `assets/ui/dust2_preview.png` | Reproducible menu thumbnail captured from the supplied 3D map |
 | `scripts/spatial/dust_world.gd` | Uploaded map, shared render/collision faces, derived navigation, physical movement and ray queries |
 | `scripts/spatial/spatial_match_sim.gd` | Fixed-tick causal ten-agent match engine; combat, utility, bomb, equipment and MR12/MR3 |
 | `scripts/spatial/played_match.gd`, `scenes/played_match.tscn` | 3D spectator view, playback/cameras, checkpoints and final settlement |
@@ -23,6 +24,10 @@
 | `tools/check.sh` | Isolated import, state tests, and UI smoke checks with error-output detection |
 
 Game logic is separate from rendering. `CardCatalog` and `MatchSimulator` are `RefCounted` helpers; `Game` is a Node autoload. State mutations return success/failure, emit `changed` only after committing, and do not depend on animation callbacks. UI routes rebuild their view after an action, while the persistent top bar listens to the state signal.
+
+Alpha 0.3 uses native window dimensions rather than scaling a fixed canvas. The sidebar stays fixed, collection columns adapt to the available width, and long pages scroll vertically. Dialogs fit within the window, scroll their content, trap Tab focus, and restore the triggering control on dismissal. Collection filtering rebuilds only the card grid so search typing retains focus. Closing a pack dialog cancels its presentation tween; secured inventory and reveal progress remain in `Game`.
+
+The reduced-motion preference is stored separately in `user://ui_preferences.cfg`; ephemeral tests neither read nor write it. The existing club schema, catalogue identities, odds, prices and reward calculations are unchanged. Regenerate the menu map image on a graphical display with `godot --path . --script res://tools/capture_menu_map.gd -- --ephemeral`, then review and commit the PNG. The helper is excluded from portable exports.
 
 ## Transaction boundaries
 
@@ -41,7 +46,7 @@ Saves use `FileAccess` and `DirAccess` with a `.tmp` write-and-rename. Godot JSO
 
 ## Tests and diagnostics
 
-`bash tools/check.sh` creates temporary XDG directories, imports assets, runs state tests, and launches the UI with `--ephemeral --ui-smoke`. The UI test uses button signals and assertions; headless mode exercises layout and control construction but cannot capture pixels. On a graphical display, add `--capture-dir=...` to produce a PNG for each route plus the sealed pack, reveal, and result.
+`bash tools/check.sh` creates temporary XDG directories, imports assets, runs state tests, and launches the UI with `--ephemeral --ui-smoke`. The UI test uses button signals and assertions, exercises 1100×740 and 1440×960 layouts, checks visible dialog actions, filters and focus, and dismisses/resumes a pack during its tear animation. Headless mode exercises layout and control construction but cannot capture pixels. On a graphical display, add `--capture-dir=...` to produce a PNG for each route plus dialogs, sealed pack, reveal, and result.
 
 The state suite uses fixed seeds and exercises actual pack generation, lineup and trade mutations, 180 starter-vs-elite simulation pairs, progression, and disk writes. Thousands of checks include per-round budget and probability bounds; this is not a claim of thousands of independent scenarios.
 

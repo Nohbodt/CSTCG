@@ -8,7 +8,7 @@ The uploaded `de_dust2+CS2+map.stl` is integrated into a Godot 3D authoring scen
 
 ## Open the scene
 
-From the existing game, open **Match room → Open 3D map lab**. Or, with Godot data directories configured as in the README:
+From the existing game, open **Help & settings → Open 3D map lab**. Or, with Godot data directories configured as in the README:
 
 ```bash
 cd /workspace/CSTCG

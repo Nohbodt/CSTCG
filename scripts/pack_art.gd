@@ -9,9 +9,10 @@ var animate = true
 var clock = 0.0
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(180, 250) if not large else Vector2(260, 350)
+	custom_minimum_size = custom_minimum_size.max(Vector2(180, 250) if not large else Vector2(260, 350))
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_to_group("pack_art")
 	resized.connect(queue_redraw)
 
 func _process(delta: float) -> void:
@@ -19,27 +20,49 @@ func _process(delta: float) -> void:
 		clock += delta
 		queue_redraw()
 
+func _text(value: String, point: Vector2, font_size: int, color: Color, font: Font = U.BOLD) -> void:
+	draw_string(font, point, value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
 func _draw() -> void:
-	var scale_factor = minf(size.x / 240.0, size.y / 310.0)
-	var offset = (size - Vector2(240, 310) * scale_factor) * 0.5
+	if size.x < 1 or size.y < 1:
+		return
+	var factor = minf(size.x / 240.0, size.y / 320.0)
+	var offset = (size - Vector2(240, 320) * factor) * 0.5
 	if animate:
-		offset.y += sin(clock * 1.3) * 3
-	draw_set_transform(offset, -0.055, Vector2.ONE * scale_factor)
-	var col = C.PACKS[pack_id].color
-	draw_style_box(U.box(Color(0, 0, 0, 0.35), 4, Color(0, 0, 0, 0), 0), Rect2(24, 19, 208, 285))
-	draw_colored_polygon(PackedVector2Array([Vector2(18, 4), Vector2(215, 4), Vector2(226, 293), Vector2(8, 293)]), col.darkened(0.2))
-	draw_colored_polygon(PackedVector2Array([Vector2(21, 15), Vector2(213, 15), Vector2(222, 281), Vector2(12, 281)]), Color("1d232b"))
-	draw_colored_polygon(PackedVector2Array([Vector2(21, 15), Vector2(125, 15), Vector2(222, 167), Vector2(222, 214), Vector2(113, 214), Vector2(17, 70)]), col)
-	for i in range(12):
-		draw_line(Vector2(23 + i * 17, 6), Vector2(23 + i * 17, 15), col.lightened(0.25), 1.2)
-		draw_line(Vector2(15 + i * 18, 282), Vector2(15 + i * 18, 291), col.lightened(0.15), 1)
-	for i in range(8):
-		draw_line(Vector2(24, 125 + i * 11), Vector2(210, 82 + i * 11), Color("e8e7dc21"), 1)
-	draw_string(U.BOLD, Vector2(34, 47), "CLUB CIRCUIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, U.BG)
-	draw_string(U.DISPLAY, Vector2(34, 118), "C / C", HORIZONTAL_ALIGNMENT_LEFT, -1, 51, U.TEXT)
-	draw_string(U.BOLD, Vector2(34, 142), "PLAYER SERIES  /  01", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, U.TEXT)
-	draw_string(U.DISPLAY, Vector2(30, 226), "CONTENDER" if pack_id == "contender" else "ELITE", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, U.TEXT)
-	draw_string(U.BOLD, Vector2(31, 247), "5 PLAYER CARDS", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
-	draw_string(U.FONT, Vector2(31, 266), "EARNED ON THE CIRCUIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, U.MUTED)
-	draw_line(Vector2(201, 180), Vector2(202, 264), col, 2)
+		offset.y += sin(clock * 1.1) * 2
+	draw_set_transform(offset, -0.018, Vector2.ONE * factor)
+	var pack = C.PACKS[pack_id]
+	var color = pack.color
+	var premium = pack_id == "elite"
+	draw_style_box(U.box(Color(0, 0, 0, 0.4), 4, Color.TRANSPARENT, 0), Rect2(20, 16, 211, 295))
+	draw_colored_polygon(PackedVector2Array([Vector2(18, 5), Vector2(222, 5), Vector2(230, 309), Vector2(10, 309)]), color.darkened(0.48))
+	draw_colored_polygon(PackedVector2Array([Vector2(20, 20), Vector2(220, 20), Vector2(228, 293), Vector2(12, 293)]), Color("101823"))
+	for i in range(18):
+		var x = 22 + i * 11
+		draw_line(Vector2(x, 6), Vector2(x - 1, 18), color.lightened(0.2), 2)
+		draw_line(Vector2(x - 7, 295), Vector2(x - 7, 307), color.lightened(0.1), 2)
+	for i in range(5):
+		var x = 36 + i * 39
+		draw_line(Vector2(x, 76), Vector2(x - 40, 207), Color(color, 0.09), 1)
+	draw_line(Vector2(25, 203), Vector2(214, 104), Color(color, 0.16), 1)
+	_text("CSTCG", Vector2(29, 56), 29, U.TEXT, U.DISPLAY)
+	_text("ALPHA COLLECTION", Vector2(30, 73), 8, color)
+	draw_line(Vector2(29, 85), Vector2(211, 85), Color(color, 0.35), 1)
+	if premium:
+		var star = PackedVector2Array()
+		for i in range(10):
+			var angle = -PI / 2 + i * PI / 5
+			star.append(Vector2(120, 145) + Vector2(cos(angle), sin(angle)) * (47 if i % 2 == 0 else 20))
+		draw_colored_polygon(star, color)
+		for i in range(5):
+			var angle = -PI / 2 + i * TAU / 5
+			draw_line(Vector2(120, 145), Vector2(120, 145) + Vector2(cos(angle), sin(angle)) * 47, color.lightened(0.3), 1)
+	else:
+		draw_arc(Vector2(120, 145), 44, PI * 0.23, PI * 1.77, 30, color, 12, true)
+		draw_line(Vector2(84, 173), Vector2(156, 116), color.lightened(0.25), 2)
+	_text("ELITE" if premium else "CONTENDER", Vector2(28, 226), 30 if premium else 24, U.TEXT, U.DISPLAY)
+	_text("CIRCUIT" if premium else "YOUR NEXT FIVE", Vector2(30, 243), 10, color)
+	draw_line(Vector2(29, 253), Vector2(211, 253), Color(color, 0.45), 1)
+	_text("5 PLAYER CARDS", Vector2(29, 270), 11, U.TEXT)
+	_text(pack.guarantee, Vector2(29, 286), 8, color)
 	draw_set_transform(Vector2.ZERO)

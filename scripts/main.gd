@@ -5,7 +5,8 @@ const C = preload("res://scripts/catalog.gd")
 const Card = preload("res://scripts/card_art.gd")
 const Pack = preload("res://scripts/pack_art.gd")
 const Arena = preload("res://scripts/arena_art.gd")
-const PAGES = ["Overview", "My squad", "Pack room", "Collection", "Match room", "Trade desk"]
+const PAGES = ["Overview", "Squad", "Packs", "Collection", "Matches", "Trades"]
+const NAV_WIDTH = 196
 
 var body: VBoxContainer
 var scroll: ScrollContainer
@@ -30,10 +31,29 @@ var replay_round: Label
 var replay_economy: Label
 var replay_chips: Array = []
 var smoke_failures = 0
+var modal_panel: PanelContainer
+var modal_return_focus: Control
+var modal_width = 1040.0
+var modal_height = 700.0
+var page_margin: MarginContainer
+var club_xp: Label
+var club_progress: ProgressBar
+var motion_control: CheckButton
+var page_tween: Tween
+var reveal_tween: Tween
+var narrow_layout = false
+var search_query = ""
+var sort_mode = 0
+var collection_grid: GridContainer
+var collection_count: Label
+var resize_queued = false
 
 func _ready() -> void:
 	theme = U.theme()
+	_load_preferences()
+	narrow_layout = size.x < 1280
 	_build_shell()
+	resized.connect(_queue_resize)
 	Game.changed.connect(_refresh_header)
 	_refresh_header()
 	navigate(0)
@@ -56,6 +76,7 @@ func _launch_spatial_smoke() -> void:
 		get_tree().quit(1)
 		return
 	navigate(4)
+	_show_help()
 	_smoke_press("Open 3D map lab   ↗")
 
 func _launch_live_smoke() -> void:
@@ -78,48 +99,52 @@ func _build_shell() -> void:
 	var shell = U.hbox(0)
 	shell.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(shell)
-	var side = U.vbox(12)
-	side.size_flags_horizontal = Control.SIZE_FILL
-	side.custom_minimum_size.x = 166
-	var brand = U.hbox(10)
-	var monogram = U.label("C / C", 22, U.BG, true)
-	var brand_tile = U.panel(monogram, U.ORANGE, 9)
-	brand_tile.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	brand_tile.add_theme_stylebox_override("panel", U.box(U.ORANGE, 3, U.ORANGE, 9))
-	brand.add_child(brand_tile)
-	var brand_name = U.vbox(0)
-	brand_name.add_child(U.label("CLUB", 15, U.TEXT, true))
-	brand_name.add_child(U.label("CIRCUIT", 15, U.TEXT, true))
-	brand.add_child(brand_name)
+	var side = U.vbox(6)
+	var brand = U.vbox(0)
+	brand.add_child(U.label("CSTCG", 29, U.TEXT, true))
+	brand.add_child(U.label("THE CLUB MANAGER", 9, U.ORANGE, true))
 	side.add_child(brand)
-	side.add_child(_gap(24))
-	side.add_child(U.label("YOUR CLUB", 10, U.MUTED, true))
-	for i in range(PAGES.size()):
-		var index = i
-		var b = U.button("%02d    %s" % [i + 1, PAGES[i]], func(): navigate(index))
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size.y = 47
-		b.add_theme_font_size_override("font_size", 13)
-		side.add_child(b)
-		nav_buttons.append(b)
+	side.add_child(_gap(12))
+	nav_buttons.resize(PAGES.size())
+	for group in [["CLUB", [0, 1, 4]], ["COLLECT", [2, 3, 5]]]:
+		side.add_child(U.label(group[0], 10, U.MUTED, true))
+		for index in group[1]:
+			var destination = int(index)
+			var button = U.button(PAGES[index], func(): navigate(destination))
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.custom_minimum_size.y = 40
+			button.add_theme_font_size_override("font_size", 13)
+			side.add_child(button)
+			nav_buttons[index] = button
+		side.add_child(_gap(6))
 	var fill = Control.new()
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side.add_child(fill)
-	var club = U.vbox(6)
-	club.add_child(U.badge("NORTHLINE CLUB", U.LIME))
-	club.add_child(U.label("Every legend starts somewhere.", 10, U.MUTED))
-	side.add_child(club)
 	side.add_child(U.divider())
-	side.add_child(U.button("?   How to play", _show_help))
-	var motion = CheckButton.new()
-	motion.text = "Reduce motion"
-	motion.add_theme_font_size_override("font_size", 11)
-	motion.toggled.connect(func(on): reduced_motion = on)
-	side.add_child(motion)
-	side.add_child(U.label("OFFLINE ALPHA  /  v0.2", 9, U.MUTED))
-	var sidebar = U.panel(side, Color("11151a"), 18)
+	side.add_child(U.label("NORTHLINE CLUB", 11, U.TEXT, true))
+	club_xp = U.label("", 11, U.MUTED)
+	side.add_child(club_xp)
+	club_progress = ProgressBar.new()
+	club_progress.custom_minimum_size.y = 4
+	club_progress.max_value = 250
+	club_progress.show_percentage = false
+	club_progress.add_theme_stylebox_override("background", U.box(U.RAISED, 2, U.RAISED, 0))
+	club_progress.add_theme_stylebox_override("fill", U.box(U.ORANGE, 2, U.ORANGE, 0))
+	side.add_child(club_progress)
+	side.add_child(_gap(8))
+	side.add_child(U.button("Help & settings", _show_help))
+	motion_control = CheckButton.new()
+	motion_control.text = "Reduce motion"
+	motion_control.button_pressed = reduced_motion
+	motion_control.tooltip_text = "Use still pack art and immediate reveals. Match playback controls remain available."
+	motion_control.add_theme_font_size_override("font_size", 11)
+	motion_control.toggled.connect(_set_reduced_motion)
+	side.add_child(motion_control)
+	side.add_child(U.label("OFFLINE ALPHA / v0.3", 9, U.MUTED))
+	var sidebar = U.panel(side, Color("0f1722"), 16)
+	sidebar.custom_minimum_size.x = NAV_WIDTH
 	sidebar.size_flags_horizontal = Control.SIZE_FILL
-	sidebar.add_theme_stylebox_override("panel", U.box(Color("11151a"), 0, U.BORDER, 18))
+	sidebar.add_theme_stylebox_override("panel", U.box(Color("0f1722"), 0, U.BORDER, 16))
 	shell.add_child(sidebar)
 	var workspace = U.vbox(0)
 	shell.add_child(workspace)
@@ -127,36 +152,39 @@ func _build_shell() -> void:
 	breadcrumb = U.label("CLUB / OVERVIEW", 11, U.MUTED, true)
 	header.add_child(breadcrumb)
 	header.add_child(U.spacer())
-	header.add_child(U.badge("SEASON 01 · PRESEASON"))
-	credit_label = U.label("", 14, U.TEXT, true)
-	header.add_child(credit_label)
-	header.add_child(U.label("|", 18, U.BORDER))
-	level_label = U.label("", 12, U.MUTED)
+	header.add_child(U.badge("OPEN CIRCUIT", U.BLUE))
+	credit_label = U.label("", 14, U.GOLD, true)
+	var wallet = U.panel(credit_label, Color(U.GOLD, 0.05), 8)
+	wallet.size_flags_horizontal = Control.SIZE_SHRINK_END
+	header.add_child(wallet)
+	level_label = U.label("", 11, U.MUTED)
 	header.add_child(level_label)
-	var top = U.panel(header, U.BG, 23)
-	top.add_theme_stylebox_override("panel", U.box(U.BG, 0, U.BORDER, 23))
+	var top = U.panel(header, U.BG, 16)
+	top.add_theme_stylebox_override("panel", U.box(U.BG, 0, U.BORDER, 16))
 	workspace.add_child(top)
 	scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	workspace.add_child(scroll)
-	var margin = MarginContainer.new()
-	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page_margin = MarginContainer.new()
+	page_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for edge in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + edge, 30)
-	scroll.add_child(margin)
-	body = U.vbox(24)
-	margin.add_child(body)
+		page_margin.add_theme_constant_override("margin_" + edge, 24)
+	scroll.add_child(page_margin)
+	body = U.vbox(20)
+	page_margin.add_child(body)
 
 func _refresh_header() -> void:
-	credit_label.text = "◈  %s CR" % _number(int(Game.data.credits))
-	level_label.text = "NORTHLINE  /  LV. %02d" % Game.club_level()
+	credit_label.text = "%s CR" % _number(int(Game.data.credits))
+	level_label.text = "LOCAL SAVE" if Game.save_enabled else "TEST SESSION"
+	level_label.tooltip_text = "Your club saves automatically after each completed action."
 	if not Game.last_error.is_empty():
-		level_label.text += "  /  UNSAVED"
+		level_label.text = "UNSAVED"
 		level_label.tooltip_text = Game.last_error
-	if nav_buttons.size() > 2:
-		nav_buttons[2].text = "03    Pack room" + ("  [%d]" % Game.total_packs() if Game.total_packs() > 0 else "")
+	club_xp.text = "COACH LV. %02d  /  %d of 250 XP" % [Game.club_level(), int(Game.data.xp) % 250]
+	club_progress.value = int(Game.data.xp) % 250
+	nav_buttons[2].text = "Packs" + ("  ·  %d" % Game.total_packs() if Game.total_packs() > 0 else "")
 
 func _number(value: int) -> String:
 	var text = str(value)
@@ -178,111 +206,108 @@ func _clear(node: Node) -> void:
 		child.queue_free()
 
 func navigate(index: int) -> void:
-	page = index
+	if is_instance_valid(modal):
+		_close_modal(false)
+	page = clampi(index, 0, PAGES.size() - 1)
+	collection_grid = null
+	collection_count = null
 	_clear(body)
 	scroll.scroll_vertical = 0
-	breadcrumb.text = "CLUB  /  " + PAGES[index].to_upper()
+	breadcrumb.text = "CLUB / " + PAGES[page].to_upper()
 	for i in range(nav_buttons.size()):
-		var active = i == index
-		nav_buttons[i].add_theme_stylebox_override("normal", U.box(Color("30251f") if active else Color(0, 0, 0, 0), 5, Color("6b4430") if active else Color(0, 0, 0, 0), 12))
+		var active = i == page
+		var style = U.box(Color("30231f") if active else Color(0, 0, 0, 0), 4, Color("76503b") if active else Color(0, 0, 0, 0), 12)
+		if active:
+			style.border_width_left = 3
+		nav_buttons[i].add_theme_stylebox_override("normal", style)
 		nav_buttons[i].add_theme_color_override("font_color", U.ORANGE if active else U.MUTED)
 	if Game.has_active_match():
-		var resume_row = U.hbox(14)
-		resume_row.add_child(U.paragraph("DUST II MATCH IN PROGRESS\nYour lineup, collection and tactic are locked until this fixture finishes. Resume at the start of the current round.", 12, U.LIME))
-		resume_row.add_child(U.button("Resume match   →", _launch_played_match, true))
-		body.add_child(U.panel(resume_row))
-	match index:
+		_status_banner("DUST II MATCH IN PROGRESS", "Your lineup is locked. Resume from the start of the current round.", "Resume match   →", _launch_played_match, U.LIME)
+	elif not Game.data.pending_pack.is_empty():
+		_status_banner("PACK OPENING IN PROGRESS", "%d of %d cards revealed. Your cards are secured; finish this opening to continue." % [Game.data.pending_pack.revealed, Game.data.pending_pack.cards.size()], "Resume opening", func(): _show_pack(Game.data.pending_pack.revealed == 0), U.GOLD)
+	match page:
 		0: _overview()
 		1: _squad()
 		2: _packs()
 		3: _collection()
 		4: _match_room()
 		5: _trades()
+	if page_tween:
+		page_tween.kill()
+	body.modulate.a = 1.0
+	if not reduced_motion:
+		body.modulate.a = 0.0
+		page_tween = create_tween()
+		page_tween.tween_property(body, "modulate:a", 1.0, 0.14)
 
 func _heading(eyebrow: String, title: String, subtitle: String) -> void:
-	var h = U.vbox(5)
-	h.add_child(U.label(eyebrow, 10, U.ORANGE, true))
-	h.add_child(U.label(title, 32, U.TEXT, true))
-	h.add_child(U.paragraph(subtitle, 13))
-	body.add_child(h)
+	var heading = U.vbox(5)
+	heading.add_child(U.label(eyebrow, 10, U.ORANGE, true))
+	heading.add_child(U.label(title, 30 if narrow_layout else 34, U.TEXT, true))
+	heading.add_child(U.paragraph(subtitle, 13))
+	body.add_child(heading)
 
 func _overview() -> void:
-	_heading("THE CLUBHOUSE", "Small beginnings. Big ambitions.", "Your roster, your decisions, your next breakthrough. Welcome back to Northline.")
 	var hero = PanelContainer.new()
-	hero.custom_minimum_size.y = 245
 	hero.clip_contents = true
 	hero.add_theme_stylebox_override("panel", U.box(U.SURFACE, 8, U.BORDER, 0))
-	var arena = Arena.new()
-	hero.add_child(arena)
-	var hero_margin = MarginContainer.new()
+	hero.add_child(Arena.new())
+	var margin = MarginContainer.new()
 	for edge in ["left", "right", "top", "bottom"]:
-		hero_margin.add_theme_constant_override("margin_" + edge, 27)
-	hero.add_child(hero_margin)
-	var hero_col = U.vbox(10)
-	hero_margin.add_child(hero_col)
-	hero_col.add_child(U.label("THE OPEN CIRCUIT  /  YOUR JOURNEY STARTS HERE", 10, U.ORANGE, true))
-	hero_col.add_child(U.label("BUILD YOUR FIVE.\nOWN THE MOMENT.", 39, U.TEXT, true))
-	hero_col.add_child(U.label("Collect the talent. Make the calls. Leave your mark.", 13, U.MUTED))
-	var hero_buttons = U.hbox(10)
-	hero_buttons.add_child(U.button("Enter match room   ↗", func(): navigate(4), true))
-	hero_buttons.add_child(U.button("Open your first packs", func(): navigate(2)))
-	hero_buttons.add_child(U.spacer())
-	hero_col.add_child(hero_buttons)
+		margin.add_theme_constant_override("margin_" + edge, 24)
+	hero.add_child(margin)
+	var row = U.hbox(20)
+	margin.add_child(row)
+	var lead = U.vbox(9)
+	lead.add_child(U.label("NORTHLINE / THE OPEN CIRCUIT", 10, U.ORANGE, true))
+	lead.add_child(U.label("BUILD YOUR FIVE.\nPLAY YOUR WAY.", 30 if narrow_layout else 37, U.TEXT, true))
+	lead.add_child(U.paragraph("Make the calls. Earn your next signing.", 13))
+	var actions = U.hbox(8)
+	if Game.has_active_match():
+		actions.add_child(U.button("Resume match   →", _launch_played_match, true))
+	elif not Game.data.pending_pack.is_empty():
+		actions.add_child(U.button("Resume opening", func(): _show_pack(Game.data.pending_pack.revealed == 0), true))
+	else:
+		actions.add_child(U.button("Prepare match   →", func(): navigate(4), true))
+		actions.add_child(U.button("Visit packs", func(): navigate(2)))
+	actions.add_child(U.spacer())
+	lead.add_child(actions)
+	row.add_child(lead)
+	var fixture = U.vbox(8)
+	fixture.custom_minimum_size.x = 240
+	fixture.size_flags_horizontal = Control.SIZE_FILL
+	fixture.add_child(U.badge("MATCH %02d / DUST II" % (Game.data.matches + 1), U.BLUE))
+	fixture.add_child(U.label("NEXT OPPONENT", 10, U.MUTED, true))
+	fixture.add_child(U.label(Game.opponent().name, 20, U.TEXT, true))
+	fixture.add_child(U.label("%d RATING · %s" % [Game.opponent().rating, C.TACTICS[Game.opponent().tactic]], 10, U.MUTED))
+	fixture.add_child(U.paragraph("Play out for full rewards.\nQuick results earn 50% credits and XP.", 12))
+	row.add_child(fixture)
 	body.add_child(hero)
-	var stats = U.hbox(12)
-	_stat(stats, "SQUAD RATING", str(Game.team_rating()), "5 / 5 roles filled", U.ORANGE)
-	_stat(stats, "CARD COLLECTION", "%02d / 30" % Game.unique_cards(), "%d total cards" % Game.total_cards(), U.TEXT)
-	_stat(stats, "MATCH RECORD", "%d W  /  %d L" % [Game.data.wins, Game.data.matches - Game.data.wins], "Open circuit · best of one", U.TEXT)
-	_stat(stats, "UNOPENED PACKS", "%02d" % Game.total_packs(), "Your next signing is waiting", U.LIME)
+	var stats = U.hbox(10)
+	_stat(stats, "TEAM RATING", str(Game.team_rating()), "5 of 5 roles filled", U.ORANGE)
+	_stat(stats, "COLLECTION", "%d / %d" % [Game.unique_cards(), C.cards().size()], "%d total copies" % Game.total_cards(), U.TEXT)
+	_stat(stats, "RECORD", "%d W · %d L" % [Game.data.wins, Game.data.matches - Game.data.wins], "%d matches completed" % Game.data.matches, U.TEXT)
+	_stat(stats, "PACK LOCKER", str(Game.total_packs()), "Ready to open", U.GOLD)
 	body.add_child(stats)
-	var lower = U.hbox(20)
-	var squad = U.vbox(12)
-	squad.size_flags_stretch_ratio = 2.2
-	var title = U.section("YOUR STARTING FIVE", C.TACTICS[int(Game.data.tactic)])
-	squad.add_child(title)
+	var roster = U.vbox(12)
+	var roster_title = U.section("STARTING FIVE", C.TACTICS[int(Game.data.tactic)])
+	roster_title.add_child(U.button("Manage squad", func(): navigate(1)))
+	roster.add_child(roster_title)
 	var lineup = U.hbox(9)
-	for id in Game.data.squad:
-		var tile = U.vbox(6)
-		var c = C.card(id)
-		tile.add_child(U.label(c.role, 9, U.MUTED, true))
-		var art = Card.new()
-		art.card = c
-		art.compact = true
+	for i in range(5):
+		var tile = U.vbox(7)
+		tile.add_child(U.label(C.ROLES[i], 10, U.MUTED, true))
+		tile.add_child(_card_tile(Game.data.squad[i], false, false, true))
 		lineup.add_child(tile)
-		tile.add_child(art)
-	squad.add_child(lineup)
-	var edit = U.button("Manage starting five   →", func(): navigate(1))
-	edit.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	squad.add_child(edit)
-	lower.add_child(squad)
-	var next = U.vbox(13)
-	next.size_flags_stretch_ratio = 1
-	next.add_child(U.section("NEXT ON THE CIRCUIT"))
-	var fixture = U.vbox(12)
-	fixture.add_child(U.badge("MATCH %02d  /  BO1" % (Game.data.matches + 1)))
-	fixture.add_child(U.label("NORTHLINE", 24, U.TEXT, true))
-	fixture.add_child(U.label("vs. " + Game.opponent().name, 17, U.MUTED, true))
-	fixture.add_child(U.divider())
-	fixture.add_child(U.label(C.MAPS[int(Game.data.map)], 11, U.TEXT, true))
-	fixture.add_child(U.paragraph("Play out: 160 / 85 CR\nSkip: 80 / 43 CR (win / loss)\nEvery fourth match earns a pack.", 12))
-	fixture.add_child(U.button("Prepare your tactics   →", func(): navigate(4)))
-	next.add_child(U.panel(fixture))
-	lower.add_child(next)
-	body.add_child(lower)
-	var journey = U.vbox(12)
-	journey.add_child(U.section("PLAY. COLLECT. BUILD.", "NO PAID CURRENCY"))
-	var track = U.hbox(16)
-	var steps = [["01", "Play the circuit", "Every match earns credits and club XP."], ["02", "Find your next star", "Open five-card packs with visible odds."], ["03", "Build a better five", "Trade spare cards and balance your roles."]]
-	for step in steps:
-		var item = U.hbox(12)
-		item.add_child(U.label(step[0], 25, U.ORANGE, true))
-		var text = U.vbox(3)
-		text.add_child(U.label(step[1], 13, U.TEXT, true))
-		text.add_child(U.paragraph(step[2], 11))
-		item.add_child(text)
-		track.add_child(item)
-	journey.add_child(track)
-	body.add_child(U.panel(journey))
+	roster.add_child(lineup)
+	body.add_child(U.panel(roster, U.SURFACE, 16))
+	var progress = U.hbox(16)
+	var note = U.vbox(4)
+	note.add_child(U.label("YOUR NEXT CONTENDER PACK", 11, U.GOLD, true))
+	note.add_child(U.paragraph("%d of 4 matches complete. Every fourth match adds a pack to your locker." % (int(Game.data.matches) % 4), 12))
+	progress.add_child(note)
+	progress.add_child(U.button("See pack odds", func(): navigate(2)))
+	body.add_child(U.panel(progress, U.SURFACE, 16))
 
 func _stat(row: HBoxContainer, title: String, value: String, caption: String, color: Color) -> void:
 	var content = U.vbox(6)
@@ -291,74 +316,92 @@ func _stat(row: HBoxContainer, title: String, value: String, caption: String, co
 	content.add_child(U.label(caption, 10, U.MUTED))
 	row.add_child(U.panel(content, U.SURFACE, 17))
 
-func _card_tile(id: String, actions: bool = false, show_count: bool = true) -> VBoxContainer:
-	var c = C.card(id)
+func _card_tile(id: String, actions: bool = false, show_count: bool = true, compact: bool = false) -> VBoxContainer:
+	var card = C.card(id)
 	var tile = U.vbox(8)
+	var inspect = Button.new()
+	inspect.text = card.handle
+	inspect.tooltip_text = "Inspect %s · %s" % [card.handle, card.role]
+	inspect.custom_minimum_size = Vector2(120, 225) if compact else Vector2(175, 284)
+	inspect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inspect.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		inspect.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
+		inspect.add_theme_color_override(state, Color.TRANSPARENT)
+	inspect.pressed.connect(func(): _show_card(id))
 	var art = Card.new()
-	art.card = c
+	art.card = card
+	art.compact = compact
 	art.selected = id in Game.data.squad
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.offset_left = 3
+	art.offset_top = 3
+	art.offset_right = -3
+	art.offset_bottom = -3
 	if Game.copies(id) == 0:
-		art.modulate = Color(0.48, 0.48, 0.48, 1)
-	tile.add_child(art)
+		art.modulate = Color(0.45, 0.45, 0.45, 1)
+	inspect.add_child(art)
+	tile.add_child(inspect)
 	if show_count:
-		var row = U.hbox(5)
-		row.add_child(U.label("×%d OWNED" % Game.copies(id) if Game.copies(id) else "NOT COLLECTED", 10, U.MUTED, true))
-		row.add_child(U.spacer())
+		var info = U.hbox(5)
+		info.add_child(U.label("×%d OWNED" % Game.copies(id) if Game.copies(id) > 0 else "NOT COLLECTED", 10, U.MUTED, true))
+		info.add_child(U.spacer())
 		if id in Game.data.squad:
-			row.add_child(U.label("IN FIVE", 9, U.ORANGE, true))
-		tile.add_child(row)
+			info.add_child(U.label("IN FIVE", 9, U.ORANGE, true))
+		tile.add_child(info)
 	if actions and Game.copies(id) > 0:
-		var equip_button = U.button("In starting five" if id in Game.data.squad else "Add to lineup  ↑", func():
+		var equip = U.button("In starting five" if id in Game.data.squad else "Add to lineup  ↑", func():
 			if Game.equip(id):
-				notify(c.handle + " is in your starting five.")
 				navigate(page)
+				notify(card.handle + " joined your starting five.")
 			else:
 				_action_failed())
-		equip_button.disabled = id in Game.data.squad or Game.has_active_match()
-		tile.add_child(equip_button)
+		equip.disabled = id in Game.data.squad or _transactions_locked()
+		tile.add_child(equip)
 	return tile
 
 func _squad() -> void:
-	_heading("ROSTER MANAGEMENT", "Five roles. One identity.", "Build a balanced lineup from real player identities. Alpha ratings and assigned roles are custom game values; collection series are not real teams.")
+	_heading("SQUAD MANAGEMENT", "Five roles. Your identity.", "Select a card to inspect it. A substitution replaces the same role and keeps both cards in your collection.")
 	var summary = U.hbox(12)
-	_stat(summary, "EFFECTIVE RATING", str(Game.team_rating()), "Includes role and chemistry bonuses", U.ORANGE)
+	_stat(summary, "TEAM RATING", str(Game.team_rating()), "Role and collection bonuses included", U.ORANGE)
 	_stat(summary, "ROLE COVERAGE", "5 / 5", "Entry · AWPer · IGL · Support · Lurker", U.LIME)
-	_stat(summary, "ACTIVE TACTIC", C.TACTICS[int(Game.data.tactic)], "Change your approach in the match room", U.TEXT)
+	_stat(summary, "APPROACH", C.TACTICS[int(Game.data.tactic)], "Set your approach in Matches", U.TEXT)
 	body.add_child(summary)
-	body.add_child(U.section("THE STARTING FIVE", "CARDS ARE NEVER CONSUMED BY PLAY"))
-	var lineup = U.hbox(14)
+	body.add_child(U.section("STARTING FIVE", "CARDS STAY IN YOUR CLUB AFTER PLAY"))
+	var lineup = U.hbox(12)
 	for i in range(5):
-		var tile = U.vbox(10)
-		tile.add_child(U.label("0%d / %s" % [i + 1, C.ROLES[i]], 11, U.ORANGE, true))
-		tile.add_child(_card_tile(Game.data.squad[i], false, false))
+		var tile = U.vbox(8)
+		tile.add_child(U.label("%02d / %s" % [i + 1, C.ROLES[i]], 10, U.ORANGE, true))
+		tile.add_child(_card_tile(Game.data.squad[i], false, false, narrow_layout))
 		lineup.add_child(tile)
 	body.add_child(lineup)
-	body.add_child(U.section("AVAILABLE TO CALL UP", "SELECT A PLAYER TO REPLACE THE SAME ROLE"))
-	var bench: Array = C.cards().filter(func(c): return Game.copies(c.id) > 0 and c.id not in Game.data.squad)
+	body.add_child(U.section("AVAILABLE SUBSTITUTES", "SELECT A ROLE-MATCHING PLAYER"))
+	var bench = C.cards().filter(func(c): return Game.copies(c.id) > 0 and c.id not in Game.data.squad)
 	bench.sort_custom(func(a, b): return a.overall > b.overall)
 	if bench.is_empty():
 		var empty = U.vbox(10)
-		empty.add_child(U.label("The next name is still in the pack.", 20, U.TEXT, true))
-		empty.add_child(U.paragraph("Your starter lineup is ready to play. Open a pack or use the trade desk to find your first substitute."))
+		empty.add_child(U.label("Your next signing is waiting.", 22, U.TEXT, true))
+		empty.add_child(U.paragraph("Your starting five is ready. Open a pack or make a trade to add a substitute.", 13))
 		empty.add_child(U.button("Visit the pack room   →", func(): navigate(2), true))
 		body.add_child(U.panel(empty))
 	else:
 		var grid = GridContainer.new()
-		grid.columns = 5
+		grid.columns = _columns()
 		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_theme_constant_override("h_separation", 14)
-		grid.add_theme_constant_override("v_separation", 22)
-		for c in bench:
-			grid.add_child(_card_tile(c.id, true))
+		grid.add_theme_constant_override("v_separation", 20)
+		for card in bench:
+			grid.add_child(_card_tile(card.id, true))
 		body.add_child(grid)
 
 func _packs() -> void:
-	_heading("PLAYER SERIES / 01", "Good clubs are built. Great cards are found.", "Five player cards in every pack. Earn credits on the circuit, collect your favorites, and upgrade your five.")
+	_heading("ALPHA COLLECTION", "Your next signing starts here.", "Open an owned pack, or use earned credits to add one to your locker. Every pack contains five players.")
 	var intro = U.hbox(10)
 	intro.add_child(U.badge("%d PACKS IN YOUR LOCKER" % Game.total_packs(), U.LIME))
 	intro.add_child(U.badge("EARNED CURRENCY ONLY", U.MUTED))
 	intro.add_child(U.spacer())
-	intro.add_child(U.label("30 PLAYERS  ·  4 RARITIES  ·  5 ROLES", 10, U.MUTED, true))
+	intro.add_child(U.label("%d PLAYERS · %d RARITIES · 5 ROLES" % [C.cards().size(), C.RARITIES.size()], 10, U.MUTED, true))
 	body.add_child(intro)
 	var row = U.hbox(20)
 	for id in ["contender", "elite"]:
@@ -366,7 +409,7 @@ func _packs() -> void:
 		var pack = C.PACKS[id]
 		var col = U.vbox(12)
 		var top = U.hbox()
-		top.add_child(U.label("SERIES 01 / PLAYER PACK", 10, U.MUTED, true))
+		top.add_child(U.label("ALPHA COLLECTION / PLAYER PACK", 10, U.MUTED, true))
 		top.add_child(U.spacer())
 		top.add_child(U.badge("×%d OWNED" % Game.data.packs[id], pack.color))
 		col.add_child(top)
@@ -382,7 +425,8 @@ func _packs() -> void:
 		var buttons = U.hbox(10)
 		var open = U.button("Open pack   ↗" if Game.data.packs[id] > 0 else "No packs owned", func(): _open_pack(pack_id), true)
 		open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		open.disabled = Game.data.packs[id] <= 0 or Game.has_active_match()
+		open.disabled = Game.data.packs[id] <= 0 or _transactions_locked()
+		open.tooltip_text = _lock_reason() if _transactions_locked() else "Reveal five players from this owned pack."
 		buttons.add_child(open)
 		var buy = U.button("Get pack · %d CR" % pack.price, func():
 			if Game.purchase_pack(pack_id):
@@ -390,7 +434,8 @@ func _packs() -> void:
 				navigate(2)
 			else:
 				_action_failed())
-		buy.disabled = Game.data.credits < pack.price or Game.has_active_match()
+		buy.disabled = Game.data.credits < pack.price or _transactions_locked()
+		buy.tooltip_text = _lock_reason() if _transactions_locked() else ("Need %d more credits." % (pack.price - Game.data.credits) if Game.data.credits < pack.price else "Adds one sealed pack to your locker.")
 		buttons.add_child(buy)
 		col.add_child(buttons)
 		row.add_child(U.panel(col, U.SURFACE, 22))
@@ -415,57 +460,71 @@ func _packs() -> void:
 	body.add_child(U.panel(odds))
 
 func _collection() -> void:
-	_heading("THE BINDER", "Every card has a place.", "Explore the complete Series 01 set. Keep a favorite, make a substitution, or turn a spare into your next pack.")
+	_heading("THE CARD BINDER", "Find the right player.", "Inspect your cards, compare roles, and make room for your next signing.")
+	var search_row = U.hbox(14)
+	var search = LineEdit.new()
+	search.name = "CollectionSearch"
+	search.placeholder_text = "Search player, name or collection…"
+	search.text = search_query
+	search.custom_minimum_size.y = 44
+	search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	search.text_changed.connect(func(value):
+		search_query = value
+		_render_collection())
+	search_row.add_child(search)
+	search_row.add_child(U.badge("%d / %d COLLECTED" % [Game.unique_cards(), C.cards().size()], U.LIME))
+	body.add_child(search_row)
 	var filters = U.hbox(10)
 	var rarity = OptionButton.new()
-	rarity.custom_minimum_size = Vector2(170, 44)
+	rarity.name = "RarityFilter"
+	rarity.custom_minimum_size = Vector2(150, 42)
 	rarity.add_item("All rarities")
-	for r in C.RARITIES:
-		rarity.add_item(r.capitalize())
+	for value in C.RARITIES:
+		rarity.add_item(value.capitalize())
 	rarity.selected = rarity_filter + 1
-	rarity.item_selected.connect(func(i):
-		rarity_filter = i - 1
-		navigate(3))
+	rarity.item_selected.connect(func(index):
+		rarity_filter = index - 1
+		_render_collection())
 	filters.add_child(rarity)
 	var role = OptionButton.new()
-	role.custom_minimum_size = Vector2(160, 44)
+	role.name = "RoleFilter"
+	role.custom_minimum_size = Vector2(140, 42)
 	role.add_item("All roles")
-	for r in C.ROLES:
-		role.add_item(r)
+	for value in C.ROLES:
+		role.add_item(value)
 	role.selected = role_filter + 1
-	role.item_selected.connect(func(i):
-		role_filter = i - 1
-		navigate(3))
+	role.item_selected.connect(func(index):
+		role_filter = index - 1
+		_render_collection())
 	filters.add_child(role)
+	var sort = OptionButton.new()
+	sort.custom_minimum_size = Vector2(160, 42)
+	for value in ["Rating: high to low", "Player: A to Z", "Rarity: high to low"]:
+		sort.add_item(value)
+	sort.selected = sort_mode
+	sort.item_selected.connect(func(index):
+		sort_mode = index
+		_render_collection())
+	filters.add_child(sort)
 	var owned = CheckButton.new()
 	owned.text = "Owned only"
 	owned.button_pressed = owned_only
 	owned.toggled.connect(func(value):
 		owned_only = value
-		navigate(3))
+		_render_collection())
 	filters.add_child(owned)
 	filters.add_child(U.spacer())
-	filters.add_child(U.label("%d / 30 COLLECTED" % Game.unique_cards(), 12, U.LIME, true))
+	filters.add_child(U.button("Clear filters", _reset_collection))
 	body.add_child(filters)
-	var cards = C.cards().filter(func(c): return (not owned_only or Game.copies(c.id) > 0) and (rarity_filter == -1 or c.rarity == rarity_filter) and (role_filter == -1 or c.role == C.ROLES[role_filter]))
-	cards.sort_custom(func(a, b): return a.overall > b.overall)
-	if cards.is_empty():
-		body.add_child(U.panel(U.paragraph("No cards match these filters. Try another role or rarity, or turn off 'Owned only' to explore the full set.")))
-		return
-	var grid = GridContainer.new()
-	grid.columns = 5
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 24)
-	for c in cards:
-		var id = c.id
-		var tile = _card_tile(id, true)
-		if Game.copies(id) > 0:
-			var sell = U.button("Release 1 · +%d CR" % C.QUICK_SELL[c.rarity], func(): _confirm_release(id))
-			sell.disabled = not Game.can_release(id)
-			sell.tooltip_text = "One copy of every active player is protected."
-			tile.add_child(sell)
-		grid.add_child(tile)
-	body.add_child(grid)
+	collection_count = U.label("", 11, U.MUTED)
+	body.add_child(collection_count)
+	collection_grid = GridContainer.new()
+	collection_grid.columns = _columns()
+	collection_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	collection_grid.add_theme_constant_override("h_separation", 14)
+	collection_grid.add_theme_constant_override("v_separation", 20)
+	body.add_child(collection_grid)
+	_render_collection()
 
 func _match_room() -> void:
 	_heading("THE OPEN CIRCUIT", "Your five. Your call.", "Choose your approach, then watch your players compete on Dust II or skip to a quick result for fewer rewards.")
@@ -497,7 +556,7 @@ func _match_room() -> void:
 			else:
 				_action_failed(), i == Game.data.map)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.disabled = Game.has_active_match()
+		b.disabled = _transactions_locked()
 		b.add_theme_font_size_override("font_size", 11)
 		map_buttons.add_child(b)
 	preparation.add_child(map_buttons)
@@ -508,7 +567,7 @@ func _match_room() -> void:
 	map_art.map_mode = true
 	map_panel.add_child(map_art)
 	preparation.add_child(map_panel)
-	preparation.add_child(U.paragraph("DUST II · THE ALPHA BATTLEGROUND\nPlay out on the uploaded 3D map. More maps will arrive in future builds. Diagram shown here is decorative.", 11))
+	preparation.add_child(U.paragraph("DUST II / THE ALPHA BATTLEGROUND\nPreview rendered from the map used in played matches. More maps will arrive in future builds.", 12))
 	row.add_child(preparation)
 	var strategy = U.vbox(14)
 	strategy.add_child(U.section("02 / SET YOUR APPROACH"))
@@ -521,7 +580,7 @@ func _match_room() -> void:
 			else:
 				_action_failed())
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.disabled = Game.has_active_match()
+		b.disabled = _transactions_locked()
 		if Game.data.tactic == i:
 			b.add_theme_color_override("font_color", U.ORANGE)
 		block.add_child(b)
@@ -538,12 +597,11 @@ func _match_room() -> void:
 	reward.add_child(U.label("%d / 4 matches toward your next Contender pack" % (int(Game.data.matches) % 4), 11, U.MUTED))
 	launch.add_child(reward)
 	launch.add_child(U.spacer())
-	launch.add_child(U.button("Resume match   →" if Game.has_active_match() else "Play match   →", _play_match, true))
+	var match_button = U.button("Resume match   →" if Game.has_active_match() else "Play match   →", _play_match, true)
+	match_button.disabled = not Game.data.pending_pack.is_empty()
+	match_button.tooltip_text = _lock_reason() if match_button.disabled else "Choose a 3D played match or a quick result."
+	launch.add_child(match_button)
 	body.add_child(U.panel(launch))
-	var map_preview = U.hbox(14)
-	map_preview.add_child(U.paragraph("Dust II map preview · explore the uploaded 3D geometry, routes, and sightlines.", 12))
-	map_preview.add_child(U.button("Open 3D map lab   ↗", func(): get_tree().change_scene_to_file("res://scenes/spatial_lab.tscn")))
-	body.add_child(U.panel(map_preview, U.SURFACE, 14))
 	if not Game.data.history.is_empty():
 		body.add_child(U.section("RECENT RESULTS", "REWARDS ARE GRANTED ONCE PER MATCH"))
 		for i in range(mini(Game.data.history.size(), 4)):
@@ -563,7 +621,7 @@ func _trades() -> void:
 	note.add_child(U.paragraph("Offers refresh after every four matches. One copy of each active player stays protected. Trades are final.", 12))
 	body.add_child(U.panel(note))
 	var grid = GridContainer.new()
-	grid.columns = 2
+	grid.columns = 2 if not narrow_layout else 1
 	grid.add_theme_constant_override("h_separation", 20)
 	grid.add_theme_constant_override("v_separation", 20)
 	for offer in Game.offers():
@@ -587,40 +645,80 @@ func _trades() -> void:
 		receive.add_child(receive_art)
 		cards.add_child(receive)
 		col.add_child(cards)
-		var available = Game.can_release(offer.give)
+		var available = Game.can_release(offer.give) and not _transactions_locked()
 		col.add_child(U.paragraph("You own %d × %s%s" % [Game.copies(offer.give), C.card(offer.give).handle, " · 1 reserved in your lineup" if offer.give in Game.data.squad else ""], 11))
-		var accept = U.button("Trade completed" if offer.used else ("Accept trade   ⇄" if available else "Spare " + C.card(offer.give).handle + " required"), func(): _confirm_trade(key), available and not offer.used)
+		var trade_label = "Accept trade   ⇄" if available else ("Finish current match" if Game.has_active_match() else ("Finish opening first" if not Game.data.pending_pack.is_empty() else "Spare " + C.card(offer.give).handle + " required"))
+		var accept = U.button("Trade completed" if offer.used else trade_label, func(): _confirm_trade(key), available and not offer.used)
 		accept.disabled = offer.used or not available
+		accept.tooltip_text = _lock_reason() if _transactions_locked() else "One copy of an active player remains protected."
 		col.add_child(accept)
 		grid.add_child(U.panel(col))
 	body.add_child(grid)
 
-func _modal_base() -> VBoxContainer:
-	_close_modal()
-	modal = PanelContainer.new()
+func _modal_base(width: float = 1040, height: float = 700) -> VBoxContainer:
+	var previous_focus = modal_return_focus if is_instance_valid(modal) else get_viewport().gui_get_focus_owner()
+	_close_modal(false)
+	_dismiss_notification()
+	modal_return_focus = previous_focus
+	modal_width = width
+	modal_height = height
+	modal = ColorRect.new()
+	modal.color = Color(0.02, 0.03, 0.05, 0.9)
+	modal.z_index = 20
 	modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	modal.add_theme_stylebox_override("panel", U.box(Color("0c1018"), 0, U.BORDER, 36))
+	modal.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(modal)
+	modal_panel = PanelContainer.new()
+	modal_panel.name = "DialogPanel"
+	modal_panel.add_theme_stylebox_override("panel", U.box(Color("141e2a"), 10, Color("455b72"), 22))
+	modal.add_child(modal_panel)
+	_fit_modal()
+	var shell = U.vbox(12)
+	modal_panel.add_child(shell)
+	var titlebar = U.hbox()
+	titlebar.add_child(U.label("CSTCG / NORTHLINE CLUB", 10, U.MUTED, true))
+	titlebar.add_child(U.spacer())
+	var close = U.button("Close  ×", _close_modal)
+	close.tooltip_text = "Close this window [Esc]. Unfinished pack openings remain secured."
+	close.custom_minimum_size.y = 34
+	titlebar.add_child(close)
+	shell.add_child(titlebar)
+	shell.add_child(U.divider())
 	var modal_scroll = ScrollContainer.new()
 	modal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	modal.add_child(modal_scroll)
-	var content = U.vbox(22)
-	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	modal_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	modal_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shell.add_child(modal_scroll)
+	var content = U.vbox(16)
 	modal_scroll.add_child(content)
+	call_deferred("_focus_dialog", weakref(close))
 	return content
 
-func _close_modal() -> void:
+func _close_modal(restore_focus: bool = true) -> void:
+	var was_open = is_instance_valid(modal)
+	if reveal_tween:
+		reveal_tween.kill()
+		reveal_tween = null
 	if is_instance_valid(replay_timer):
 		replay_timer.stop()
 		replay_timer.queue_free()
 		replay_timer = null
-	if is_instance_valid(modal):
+	if was_open:
 		remove_child(modal)
 		modal.queue_free()
 	modal = null
+	modal_panel = null
+	if restore_focus and was_open:
+		if not Game.data.pending_pack.is_empty():
+			navigate(page)
+		if is_instance_valid(modal_return_focus) and modal_return_focus.is_inside_tree():
+			modal_return_focus.grab_focus()
+		else:
+			nav_buttons[page].grab_focus()
 
 func _open_pack(id: String) -> void:
 	if Game.open_pack(id):
+		navigate(page)
 		_show_pack(true)
 	else:
 		_action_failed()
@@ -630,9 +728,12 @@ func _show_pack(sealed: bool = false) -> void:
 	if pending.is_empty():
 		return
 	var pack = C.PACKS[pending.pack_id]
-	var content = _modal_base()
-	content.add_child(U.section("PACK ROOM / " + pack.name, "PLAYER SERIES 01"))
-	var title = U.label("Your next five possibilities.", 39, U.TEXT, true)
+	var content = _modal_base(1180, 780)
+	var short_window = size.y < 820
+	if short_window:
+		content.add_theme_constant_override("separation", 10)
+	content.add_child(U.section("PACK ROOM / " + pack.name, "ALPHA COLLECTION"))
+	var title = U.label("Reveal your next signing.", 28 if short_window else 32, U.TEXT, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(title)
 	var subtitle = U.label(pack.guarantee + "  /  5 PLAYER CARDS", 11, pack.color, true)
@@ -643,7 +744,7 @@ func _show_pack(sealed: bool = false) -> void:
 		art.pack_id = pending.pack_id
 		art.large = true
 		art.animate = not reduced_motion
-		art.custom_minimum_size.y = 380
+		art.custom_minimum_size.y = 350 if short_window else 380
 		content.add_child(art)
 		var tear = U.button("Tear open   →", func(): _tear_pack(art), true)
 		tear.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -653,7 +754,7 @@ func _show_pack(sealed: bool = false) -> void:
 		tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		content.add_child(tip)
 		return
-	content.add_child(_gap(15))
+	content.add_child(_gap(4 if short_window else 15))
 	var row = U.hbox(18)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	for i in range(5):
@@ -662,7 +763,7 @@ func _show_pack(sealed: bool = false) -> void:
 		art.card = C.card(pending.cards[i])
 		art.face_down = i >= pending.revealed
 		art.fresh = pending.new_flags[i]
-		art.custom_minimum_size.y = 350
+		art.custom_minimum_size.y = 284 if short_window else 350
 		tile.add_child(art)
 		var info = U.label("%02d / UNREVEALED" % (i + 1) if art.face_down else ("NEW SIGNING" if pending.new_flags[i] else "DUPLICATE · KEEP OR TRADE"), 10, U.MUTED if art.face_down else C.COLORS[art.card.rarity], true)
 		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -673,7 +774,7 @@ func _show_pack(sealed: bool = false) -> void:
 			tile.add_child(guarantee)
 		row.add_child(tile)
 	content.add_child(row)
-	content.add_child(_gap(20))
+	content.add_child(_gap(4 if short_window else 20))
 	var buttons = U.hbox(12)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	if pending.revealed < 5:
@@ -695,10 +796,12 @@ func _tear_pack(art: Control) -> void:
 		_show_pack()
 		return
 	art.pivot_offset = art.size * 0.5
-	var tween = create_tween().set_parallel(true)
-	tween.tween_property(art, "scale", Vector2(1.08, 1.08), 0.18)
-	tween.tween_property(art, "modulate:a", 0.0, 0.25).set_delay(0.1)
-	tween.chain().tween_callback(func(): _show_pack())
+	reveal_tween = create_tween().set_parallel(true)
+	reveal_tween.tween_property(art, "scale", Vector2(1.08, 1.08), 0.18)
+	reveal_tween.tween_property(art, "modulate:a", 0.0, 0.25).set_delay(0.1)
+	reveal_tween.chain().tween_callback(func():
+		if is_instance_valid(art) and art.is_inside_tree():
+			_show_pack())
 
 func _reveal(all_cards: bool) -> void:
 	if Game.reveal_cards(all_cards):
@@ -721,10 +824,11 @@ func _play_match() -> void:
 	if not Game.data.pending_pack.is_empty():
 		_action_failed()
 		return
-	var content = _modal_base()
-	content.add_child(_gap(70))
+	var content = _modal_base(1040, 700)
+	if size.y < 820:
+		content.add_theme_constant_override("separation", 12)
 	content.add_child(U.section("MATCH %02d / DUST II" % (Game.data.matches + 1), "NORTHLINE VS " + Game.opponent().name))
-	content.add_child(U.label("How do you want to play?", 38, U.TEXT, true))
+	content.add_child(U.label("Choose your match experience.", 32, U.TEXT, true))
 	content.add_child(U.paragraph("Your lineup and tactic are ready. Both modes count toward your next pack reward.", 15))
 	var choices = U.hbox(22)
 	var played = U.vbox(16)
@@ -734,7 +838,7 @@ func _play_match() -> void:
 	played.add_child(U.label("WIN   +160 CR / +100 XP\nLOSS   +85 CR / +60 XP", 14, U.LIME, true))
 	played.add_child(U.paragraph("About 3 minutes at 8×. Completed rounds save automatically.", 12))
 	played.add_child(U.button("Play out match", _begin_played_match, true))
-	choices.add_child(U.panel(played, U.SURFACE, 26))
+	choices.add_child(U.panel(played, U.SURFACE, 20 if size.y < 820 else 26))
 	var skipped = U.vbox(16)
 	skipped.add_child(U.badge("50% CREDITS & XP", U.ORANGE))
 	skipped.add_child(U.label("Go straight to the report.", 25, U.TEXT, true))
@@ -742,7 +846,7 @@ func _play_match() -> void:
 	skipped.add_child(U.label("WIN   +80 CR / +50 XP\nLOSS   +43 CR / +30 XP", 14, U.ORANGE, true))
 	skipped.add_child(U.paragraph("Instant result. The same pack milestone progress.", 12))
 	skipped.add_child(U.button("Skip to result (less rewards)", _skip_match))
-	choices.add_child(U.panel(skipped, U.SURFACE, 26))
+	choices.add_child(U.panel(skipped, U.SURFACE, 20 if size.y < 820 else 26))
 	content.add_child(choices)
 	content.add_child(U.button("Cancel", _close_modal))
 
@@ -766,7 +870,7 @@ func _show_match(result: Dictionary, animate: bool) -> void:
 	replay_result = result
 	replay_index = 0
 	replay_chips = []
-	var content = _modal_base()
+	var content = _modal_base(1120, 780)
 	content.add_child(U.section("THE OPEN CIRCUIT / MATCH REPORT", C.map_label(result) + " / " + str(result.get("mode", "legacy")).to_upper()))
 	var score = U.hbox(30)
 	score.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -791,13 +895,17 @@ func _show_match(result: Dictionary, animate: bool) -> void:
 		replay_chips.append(panel)
 	content.add_child(grid)
 	var replay_row = U.hbox(20)
-	var map_panel = PanelContainer.new()
-	map_panel.custom_minimum_size.y = 260
-	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var arena = Arena.new()
-	arena.map_mode = true
-	map_panel.add_child(arena)
-	replay_row.add_child(map_panel)
+	var standout = U.vbox(6)
+	standout.custom_minimum_size.x = 210
+	standout.size_flags_horizontal = Control.SIZE_FILL
+	standout.add_child(U.label("YOUR STANDOUT", 10, U.GOLD, true))
+	var mvp_card = Card.new()
+	mvp_card.card = C.card(result.mvp)
+	mvp_card.compact = true
+	mvp_card.custom_minimum_size = Vector2(170, 240)
+	standout.add_child(mvp_card)
+	standout.add_child(U.label("%d ELIMINATIONS" % result.kills[result.mvp], 11, U.MUTED, true))
+	replay_row.add_child(standout)
 	var log_col = U.vbox(10)
 	log_col.add_child(U.section("ROUND FEED", "QUICK SIMULATION" if result.get("mode") == "skipped" else "SAVED REPORT"))
 	replay_log = RichTextLabel.new()
@@ -809,7 +917,7 @@ func _show_match(result: Dictionary, animate: bool) -> void:
 	log_col.add_child(replay_log)
 	replay_row.add_child(U.panel(log_col))
 	content.add_child(replay_row)
-	replay_economy = U.label("Team equipment budgets: 800 / 800", 12, U.MUTED)
+	replay_economy = U.paragraph("Team equipment budgets: 800 / 800", 12, U.MUTED)
 	content.add_child(replay_economy)
 	var controls = U.hbox(12)
 	controls.name = "ReplayControls"
@@ -854,7 +962,7 @@ func _complete_replay() -> void:
 	replay_score.text = "%02d : %02d" % [replay_result.score[0], replay_result.score[1]]
 	replay_round.text = ("VICTORY" if replay_result.won else "DEFEAT") + " / " + str(replay_result.rounds.size()) + " ROUNDS" + (" / DECIDING ROUND AFTER SIX OVERTIMES" if replay_result.sudden_death else "")
 	replay_round.add_theme_color_override("font_color", U.LIME if replay_result.won else U.ORANGE)
-	replay_economy.text = "Rewards saved: +%d CR  /  +%d XP   ·   Your standout: %s (%d eliminations)" % [replay_result.reward, replay_result.xp, C.card(replay_result.mvp).handle, replay_result.kills[replay_result.mvp]]
+	replay_economy.text = "Match rewards: +%d CR / +%d XP · Standout: %s (%d eliminations)" % [replay_result.reward, replay_result.xp, C.card(replay_result.mvp).handle, replay_result.kills[replay_result.mvp]]
 	var controls = modal.find_child("ReplayControls", true, false)
 	_clear(controls)
 	controls.add_child(U.button("Back to the club   →", func():
@@ -890,10 +998,9 @@ func _confirm_trade(key: String) -> void:
 		return
 
 func _confirm(title: String, detail: String, action: String, callback: Callable) -> void:
-	var content = _modal_base()
-	content.add_child(_gap(130))
-	content.add_child(U.label(title, 34, U.TEXT, true))
-	content.add_child(U.paragraph(detail, 16))
+	var content = _modal_base(730, 340)
+	content.add_child(U.label(title, 29, U.TEXT, true))
+	content.add_child(U.paragraph(detail, 15))
 	var buttons = U.hbox()
 	buttons.add_child(U.button(action, callback, true))
 	buttons.add_child(U.button("Cancel", _close_modal))
@@ -901,36 +1008,48 @@ func _confirm(title: String, detail: String, action: String, callback: Callable)
 	content.add_child(buttons)
 
 func _show_help() -> void:
-	var content = _modal_base()
-	content.add_child(U.label("Welcome to the circuit.", 38, U.TEXT, true))
-	content.add_child(U.paragraph("A single-player Counter-Strike-inspired club manager and card collector with real public player identities. Ratings, roles, and collection series are alpha game tuning. This independent prototype is not affiliated with Valve or the players.", 15))
+	var content = _modal_base(1000, 730)
+	content.add_child(U.label("Welcome to your club.", 32, U.TEXT, true))
+	content.add_child(U.paragraph("Build a five-player squad, choose your approach, and turn match rewards into your next signing.", 15))
 	var steps = [
-		["01 / OPEN YOUR STARTER PACKS", "Two Contender packs are already in your locker. Each contains five cards with a Rare-or-better fifth card. Pack contents are saved before reveal."],
-		["02 / BUILD YOUR FIVE", "Use My squad or Collection to add a player. The new card replaces the same role; the old player stays in your collection."],
-		["03 / PREPARE AND PLAY", "Set your tactic in Match room. Play out match watches an automatic 3D Dust II match with movement, combat, and the bomb objective. Pause, change cameras, follow players, or speed up to 16×. Return to club resumes from the start of the current round."],
-		["04 / EARN YOUR NEXT SIGNING", "Played match: win 160 CR / 100 XP; loss 85 CR / 60 XP. Skip to result: win 80 CR / 50 XP; loss 43 CR / 30 XP. Every fourth completed match earns a Contender pack; every twelfth also earns an Elite pack. Rewards save once at full time."],
-		["05 / MAKE THE EXCHANGE", "Trade spare cards with local AI managers or release them for credits. One active copy is always protected. Offers refresh every four matches."],
-		["A NOTE ON THIS BUILD", "This is an offline prototype with local JSON saves. Online trading, ranked play, player contracts, licensed rosters, and paid purchases are not implemented. Headless simulation is supported; visual play requires a desktop display."]]
+		["01 / OPEN PACKS", "Your locker starts with two Contender packs. Each has five players and a guaranteed Rare-or-better final card. Contents are secured before the reveal."],
+		["02 / BUILD YOUR FIVE", "Inspect a card, then add it to the matching role. Your previous player stays in the binder. One copy of each active player is protected from trades and release."],
+		["03 / MAKE THE CALL", "Set your approach in Matches. Play out a 3D Dust II match for full rewards or skip to a quick result for 50% credits and XP. Completed rounds save automatically."],
+		["04 / KEEP BUILDING", "A played win earns 160 CR / 100 XP; a loss earns 85 CR / 60 XP. Every fourth completed match earns a Contender pack; every twelfth also earns an Elite pack."]]
 	for step in steps:
-		var col = U.vbox(7)
-		col.add_child(U.label(step[0], 12, U.ORANGE, true))
-		col.add_child(U.paragraph(step[1], 14))
-		content.add_child(U.panel(col))
+		var block = U.vbox(5)
+		block.add_child(U.label(step[0], 11, U.ORANGE, true))
+		block.add_child(U.paragraph(step[1], 13))
+		content.add_child(U.panel(block, U.BG, 14))
+	content.add_child(U.section("THIS PLAYABLE ALPHA"))
+	content.add_child(U.paragraph("%d real player identities · %d pack products · %d rarities. Roles and ratings are custom game values. Portraits use neutral identity art where no portrait asset is available. Trades use local AI managers." % [C.cards().size(), C.PACKS.size(), C.RARITIES.size()], 12))
+	content.add_child(U.paragraph("Reduce motion controls pack effects and menu fades. You can pause or change speed inside a played match. Escape closes a dialog; Tab stays within the open dialog.", 12))
+	var tools = U.hbox(14)
+	tools.add_child(U.paragraph("Map tools\nExplore the supplied Dust II geometry, navigation, and sightlines in the developer lab.", 12))
+	tools.add_child(U.button("Open 3D map lab   ↗", func(): get_tree().change_scene_to_file("res://scenes/spatial_lab.tscn")))
+	content.add_child(U.panel(tools, U.BG, 14))
 	content.add_child(U.button("Back to my club   →", _close_modal, true))
 
 func _action_failed() -> void:
 	notify(Game.last_error if not Game.last_error.is_empty() else "That action is unavailable. Check your credits, cards, or unopened reveal.")
 
-func notify(message: String) -> void:
-	if is_instance_valid(toast_panel):
-		toast_panel.queue_free()
+func _dismiss_notification() -> void:
 	if toast_tween:
 		toast_tween.kill()
+		toast_tween = null
+	if is_instance_valid(toast_panel):
+		remove_child(toast_panel)
+		toast_panel.queue_free()
+	toast_panel = null
+
+func notify(message: String) -> void:
+	_dismiss_notification()
 	var text = U.paragraph(message, 13, U.TEXT)
 	toast_panel = U.panel(text, U.RAISED, 15)
-	toast_panel.custom_minimum_size = Vector2(500, 56)
+	toast_panel.custom_minimum_size = Vector2(minf(460, size.x - 48), 56)
+	toast_panel.z_index = 100
 	toast_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	toast_panel.offset_left = -550
+	toast_panel.offset_left = -24 - minf(460, size.x - 48)
 	toast_panel.offset_right = -24
 	toast_panel.offset_top = -90
 	toast_panel.offset_bottom = -24
@@ -948,29 +1067,78 @@ func _ui_smoke() -> void:
 		get_tree().quit(1)
 		return
 	Game.rng.seed = 2026
-	reduced_motion = true
+	if DisplayServer.get_name() == "headless":
+		get_window().size = Vector2i(1440, 960)
+		await get_tree().process_frame
+		await get_tree().process_frame
+	motion_control.button_pressed = true
 	for index in range(6):
 		nav_buttons[index].pressed.emit()
 		await get_tree().process_frame
+		_smoke_layout(PAGES[index])
 		await get_tree().process_frame
 		if body.get_child_count() == 0:
 			push_error("Empty page: " + PAGES[index])
 			get_tree().quit(1)
 			return
 		await _capture("%02d_%s" % [index, PAGES[index].to_snake_case()])
+	# Filtering preserves typing focus; inspection is read-only and traps focus.
+	navigate(3)
+	var search = body.find_child("CollectionSearch", true, false)
+	search.grab_focus()
+	search.text = "no-such-player"
+	search.text_changed.emit(search.text)
+	_smoke_expect(collection_count.text.begins_with("0 players"), "empty search is explained")
+	_smoke_expect(get_viewport().gui_get_focus_owner() == search, "typing focus survives filtering")
+	_smoke_press("Clear filters")
+	_smoke_expect(collection_grid.get_child_count() == C.cards().size(), "reset explores the full actual catalogue")
+	var inspect_button = _find_button(body, C.card(Game.data.squad[0]).handle)
+	inspect_button.grab_focus()
+	inspect_button.pressed.emit()
+	await get_tree().process_frame
+	_smoke_dialog_layout("player profile")
+	nav_buttons[0].grab_focus()
+	var tab = InputEventKey.new()
+	tab.keycode = KEY_TAB
+	tab.pressed = true
+	_input(tab)
+	_smoke_expect(modal.is_ancestor_of(get_viewport().gui_get_focus_owner()), "modal keyboard focus stays inside")
+	var escape = InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	_input(escape)
+	_smoke_expect(not is_instance_valid(modal) and get_viewport().gui_get_focus_owner() == inspect_button, "Escape closes and restores card focus")
 	navigate(2)
 	_smoke_press("Get pack · 200 CR")
 	_smoke_expect(Game.data.credits == 600 and Game.data.packs.contender == 3, "pack purchase button updates wallet and locker")
 	_smoke_press("Open pack   ↗")
 	await get_tree().process_frame
+	await get_tree().process_frame
+	_smoke_action_visible("Tear open   →")
 	await _capture("06_sealed_pack")
+	# Closing a moving wrapper cannot reopen the dialog from a delayed callback.
+	motion_control.button_pressed = false
+	var secured_pack = Game.data.duplicate(true)
+	_smoke_press("Tear open   →")
+	_input(escape)
+	await get_tree().create_timer(0.45).timeout
+	_smoke_expect(not is_instance_valid(modal) and Game.data == secured_pack, "closing during tear cancels presentation without rerolling")
+	_smoke_press("Resume opening")
+	motion_control.button_pressed = true
 	_smoke_press("Tear open   →")
 	_smoke_expect(Game.data.pending_pack.revealed == 0, "tearing pack does not skip the reveal")
 	_smoke_press("Reveal card 1 / 5   →")
 	_smoke_expect(Game.data.pending_pack.revealed == 1, "single reveal button")
+	secured_pack = Game.data.duplicate(true)
+	_input(escape)
+	_smoke_expect(_find_button(body, "Get pack · 200 CR").disabled, "purchases are visibly locked during an opening")
+	_smoke_press("Resume opening")
+	_smoke_expect(Game.data == secured_pack, "resuming the opening preserves cards and reveal position")
 	_smoke_press("Reveal all")
 	_smoke_expect(Game.data.pending_pack.revealed == 5, "reveal all button")
 	await get_tree().process_frame
+	await get_tree().process_frame
+	_smoke_action_visible("Build your five   →")
 	await _capture("07_pack_reveal")
 	_smoke_press("Build your five   →")
 	_smoke_expect(Game.data.pending_pack.is_empty() and page == 1, "pack completion returns to roster")
@@ -1023,8 +1191,55 @@ func _ui_smoke() -> void:
 	_show_help()
 	await get_tree().process_frame
 	_smoke_press("Back to my club   →")
-	print("CSTCG_UI_SMOKE: 6 pages, purchase, pack reveal, substitution, trade, tactics, match, history, help; %d failures" % smoke_failures)
+	# Exercise native resizing, including dialogs, without scaling small text.
+	var original_size = get_window().size
+	for extent in [Vector2i(1100, 740), Vector2i(1440, 960)]:
+		get_window().size = extent
+		await get_tree().process_frame
+		await get_tree().process_frame
+		for index in range(6):
+			navigate(index)
+			await get_tree().process_frame
+			await get_tree().process_frame
+			_smoke_layout("%s at %s" % [PAGES[index], extent])
+		_show_card(Game.data.squad[0])
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_smoke_dialog_layout("profile at %s" % extent)
+		await _capture("%d_profile" % extent.x)
+		_close_modal()
+		navigate(4)
+		_play_match()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_smoke_dialog_layout("match choice at %s" % extent)
+		_smoke_action_visible("Play out match")
+		_smoke_action_visible("Skip to result (less rewards)")
+		_smoke_action_visible("Cancel")
+		await _capture("%d_match_choice" % extent.x)
+		_close_modal()
+	get_window().size = original_size
+	print("CSTCG_UI_SMOKE: 6 pages, two window sizes, filters, inspection, focus, secured pack resume, trade, match, history, help; %d failures" % smoke_failures)
 	get_tree().quit(0 if smoke_failures == 0 else 1)
+
+func _smoke_layout(context: String) -> void:
+	_smoke_expect(scroll.get_global_rect().end.x <= size.x + 1, context + ": workspace fits window")
+	_smoke_expect(body.get_combined_minimum_size().x <= size.x - scroll.global_position.x - 48 + 1, context + ": content has no horizontal overflow")
+
+func _smoke_dialog_layout(context: String) -> void:
+	var rect = modal_panel.get_global_rect()
+	_smoke_expect(rect.position.x >= 0 and rect.position.y >= 0 and rect.end.x <= size.x + 1 and rect.end.y <= size.y + 1, context + ": dialog fits window")
+
+func _smoke_action_visible(text: String) -> void:
+	var button = _find_button(modal, text)
+	_smoke_expect(button != null, "dialog action exists: " + text)
+	if button == null:
+		return
+	var ancestor = button.get_parent()
+	while ancestor != modal:
+		if ancestor is ScrollContainer:
+			_smoke_expect(ancestor.get_global_rect().grow(1).encloses(button.get_global_rect()), "dialog action visible without scrolling: " + text)
+		ancestor = ancestor.get_parent()
 
 func _smoke_expect(condition: bool, message: String) -> void:
 	if not condition:
@@ -1036,6 +1251,7 @@ func _smoke_press(text: String) -> void:
 	var b = _find_button(scope, text)
 	_smoke_expect(b != null and not b.disabled, "available button: " + text)
 	if b != null and not b.disabled:
+		b.grab_focus()
 		b.pressed.emit()
 
 func _find_button(node: Node, text: String) -> Button:
@@ -1057,3 +1273,169 @@ func _capture(filename: String) -> void:
 	await RenderingServer.frame_post_draw
 	DirAccess.make_dir_recursive_absolute(directory)
 	get_viewport().get_texture().get_image().save_png(directory.path_join(filename + ".png"))
+
+func _columns(card_width: float = 175, gap: float = 14) -> int:
+	return clampi(int((size.x - NAV_WIDTH - 48 + gap) / (card_width + gap)), 2, 6)
+
+func _transactions_locked() -> bool:
+	return Game.has_active_match() or not Game.data.pending_pack.is_empty()
+
+func _lock_reason() -> String:
+	return "Finish the current match before changing your collection." if Game.has_active_match() else "Finish revealing your current pack first."
+
+func _status_banner(title: String, detail: String, action: String, callback: Callable, color: Color) -> void:
+	var row = U.hbox(16)
+	var copy = U.vbox(3)
+	copy.add_child(U.label(title, 10, color, true))
+	copy.add_child(U.paragraph(detail, 12))
+	row.add_child(copy)
+	row.add_child(U.button(action, callback))
+	body.add_child(U.panel(row, Color(color, 0.035), 14))
+
+func _render_collection() -> void:
+	if not is_instance_valid(collection_grid):
+		return
+	_clear(collection_grid)
+	var cards = C.cards().filter(func(card):
+		return (not owned_only or Game.copies(card.id) > 0) and (rarity_filter < 0 or card.rarity == rarity_filter) and (role_filter < 0 or card.role == C.ROLES[role_filter]) and (search_query.strip_edges().is_empty() or (card.handle + " " + card.name + " " + card.club).to_lower().contains(search_query.strip_edges().to_lower())))
+	cards.sort_custom(func(a, b):
+		if sort_mode == 1:
+			return a.handle.to_lower() < b.handle.to_lower()
+		if sort_mode == 2 and a.rarity != b.rarity:
+			return a.rarity > b.rarity
+		return a.overall > b.overall if a.overall != b.overall else a.handle < b.handle)
+	collection_count.text = "%d players shown · select a card to inspect its profile" % cards.size()
+	if cards.is_empty():
+		var empty = U.vbox(10)
+		empty.add_child(U.label("No players match this search.", 20, U.TEXT, true))
+		empty.add_child(U.paragraph("Try another name, role or rarity, or clear the filters to explore the collection.", 13))
+		empty.add_child(U.button("Reset collection filters", _reset_collection))
+		collection_grid.add_child(U.panel(empty))
+		return
+	for card in cards:
+		var id = card.id
+		var tile = _card_tile(id, true)
+		if Game.copies(id) > 0:
+			var release = U.button("Release 1 · +%d CR" % C.QUICK_SELL[card.rarity], func(): _confirm_release(id))
+			release.disabled = not Game.can_release(id) or _transactions_locked()
+			release.tooltip_text = "One copy in your starting five is always protected. Finish any active opening or match first."
+			tile.add_child(release)
+		collection_grid.add_child(tile)
+
+func _reset_collection() -> void:
+	search_query = ""
+	role_filter = -1
+	rarity_filter = -1
+	owned_only = false
+	sort_mode = 0
+	navigate(3)
+
+func _show_card(id: String) -> void:
+	var card = C.card(id)
+	var content = _modal_base(920, 650)
+	content.add_child(U.section("PLAYER PROFILE", C.RARITIES[card.rarity] + " / ALPHA COLLECTION"))
+	var row = U.hbox(26)
+	var art = Card.new()
+	art.card = card
+	art.custom_minimum_size = Vector2(230, 355)
+	art.size_flags_horizontal = Control.SIZE_FILL
+	row.add_child(art)
+	var profile = U.vbox(13)
+	profile.add_child(U.label(card.handle, 36, U.TEXT, true))
+	profile.add_child(U.label(card.name, 15, U.MUTED))
+	profile.add_child(U.badge(card.country + " / " + card.role, C.COLORS[card.rarity]))
+	var values = U.hbox(10)
+	for i in range(3):
+		var block = U.vbox(3)
+		block.add_child(U.label(str([card.aim, card.sense, card.utility][i]), 30, U.TEXT, true))
+		block.add_child(U.label(["AIM", "GAME SENSE", "UTILITY"][i], 10, U.MUTED, true))
+		values.add_child(block)
+	profile.add_child(U.panel(values, U.BG, 15))
+	profile.add_child(U.paragraph("%d overall · %s collection\n%d copies owned%s" % [card.overall, card.club.capitalize(), Game.copies(id), " · in your starting five" if id in Game.data.squad else ""], 13))
+	profile.add_child(U.paragraph("Alpha roles and ratings are authored game values. Collection labels are not current player organizations.", 12))
+	if Game.copies(id) > 0 and id not in Game.data.squad:
+		var equip = U.button("Add to lineup  ↑", func():
+			if Game.equip(id):
+				_close_modal()
+				navigate(page)
+				notify(card.handle + " joined your starting five.")
+			else:
+				_action_failed(), true)
+		equip.disabled = _transactions_locked()
+		profile.add_child(equip)
+	elif Game.copies(id) == 0:
+		profile.add_child(U.badge("NOT YET COLLECTED", U.MUTED))
+	row.add_child(profile)
+	content.add_child(row)
+
+func _fit_modal() -> void:
+	if not is_instance_valid(modal_panel):
+		return
+	var extent = Vector2(minf(modal_width, size.x - 48), minf(modal_height, size.y - 48))
+	modal_panel.position = (size - extent) * 0.5
+	modal_panel.size = extent
+
+func _focus_dialog(reference: WeakRef) -> void:
+	var target = reference.get_ref()
+	if is_instance_valid(target) and target.is_inside_tree() and is_instance_valid(modal) and modal.is_ancestor_of(target):
+		target.grab_focus()
+
+func _queue_resize() -> void:
+	if resize_queued or not is_instance_valid(body):
+		return
+	resize_queued = true
+	call_deferred("_apply_resize")
+
+func _apply_resize() -> void:
+	resize_queued = false
+	narrow_layout = size.x < 1280
+	if is_instance_valid(modal):
+		_fit_modal()
+	else:
+		var position_before = scroll.scroll_vertical
+		navigate(page)
+		scroll.set_deferred("scroll_vertical", position_before)
+
+func _input(event: InputEvent) -> void:
+	if not is_instance_valid(modal) or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if event.keycode == KEY_ESCAPE:
+		_close_modal()
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_TAB:
+		var focusables: Array[Control] = []
+		_collect_focusables(modal, focusables)
+		if not focusables.is_empty():
+			var index = focusables.find(get_viewport().gui_get_focus_owner())
+			if index < 0 and event.shift_pressed:
+				index = 0
+			focusables[posmod(index + (-1 if event.shift_pressed else 1), focusables.size())].grab_focus()
+		get_viewport().set_input_as_handled()
+
+func _collect_focusables(node: Node, output: Array[Control]) -> void:
+	if node is Control and node.focus_mode != Control.FOCUS_NONE and node.is_visible_in_tree():
+		if not node is BaseButton or not node.disabled:
+			output.append(node)
+	for child in node.get_children():
+		_collect_focusables(child, output)
+
+func _load_preferences() -> void:
+	if not Game.save_enabled:
+		return
+	var settings = ConfigFile.new()
+	if settings.load("user://ui_preferences.cfg") == OK:
+		reduced_motion = bool(settings.get_value("accessibility", "reduced_motion", false))
+
+func _set_reduced_motion(value: bool) -> void:
+	reduced_motion = value
+	for pack in get_tree().get_nodes_in_group("pack_art"):
+		pack.animate = not value
+		pack.queue_redraw()
+	if value and page_tween:
+		page_tween.kill()
+		body.modulate.a = 1
+	if Game.save_enabled:
+		var settings = ConfigFile.new()
+		settings.set_value("accessibility", "reduced_motion", value)
+		if settings.save("user://ui_preferences.cfg") != OK:
+			notify("Motion preference applies to this session; it could not be saved.")

@@ -62,7 +62,7 @@ func _build_ui() -> void:
 	margin.add_child(shell)
 	var header = U.hbox(16)
 	var titles = U.vbox(3)
-	titles.add_child(U.label("C / C    WORLD DEVELOPMENT", 10, U.ORANGE, true))
+	titles.add_child(U.label("CSTCG / MAP TOOLS", 10, U.ORANGE, true))
 	titles.add_child(U.label("DUST II / SPATIAL LAB", 28, U.TEXT, true))
 	header.add_child(titles)
 	header.add_child(U.spacer())

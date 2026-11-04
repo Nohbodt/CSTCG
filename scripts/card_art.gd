@@ -10,7 +10,7 @@ var fresh = false
 var selected = false
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(120, 200) if compact else Vector2(175, 284)
+	custom_minimum_size = custom_minimum_size.max(Vector2(120, 200) if compact else Vector2(175, 284))
 	clip_contents = true
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -41,8 +41,8 @@ func _draw() -> void:
 			_stripe(Vector2(i * 24 - 150, 289), Vector2(i * 24 + 90, 1), Color("293440"))
 		draw_circle(Vector2(95, 134), 38, Color("202b36"))
 		draw_arc(Vector2(95, 134), 40, 0, TAU, 48, U.ORANGE, 1.4)
-		_text("C / C", Vector2(57, 144), 28, U.ORANGE)
-		_text("CLUB CIRCUIT", Vector2(36, 216), 15, U.TEXT)
+		_text("CSTCG", Vector2(41, 143), 28, U.ORANGE)
+		_text("PLAYER COLLECTION", Vector2(30, 216), 12, U.TEXT)
 		_text("REVEAL YOUR NEXT", Vector2(35, 237), 10, U.MUTED, U.BOLD)
 		return
 	if card.is_empty():
@@ -50,7 +50,8 @@ func _draw() -> void:
 	var color = C.COLORS[card.rarity]
 	var border = U.ORANGE if selected else Color(color, 0.5)
 	draw_style_box(U.box(Color("151c24"), 7, border, 0), Rect2(0, 0, 190, 290))
-	draw_rect(Rect2(1, 1, 188, 175), Color(color, 0.14))
+	draw_rect(Rect2(1, 1, 188, 175), Color(color, 0.08))
+	draw_style_box(U.box(Color.TRANSPARENT, 5, Color(color, 0.18), 0), Rect2(5, 5, 180, 280))
 	# Real identities use a supplied portrait when available; the alpha fallback
 	# is a neutral nameplate, never an invented face presented as the player.
 	for i in range(7):
@@ -69,11 +70,13 @@ func _draw() -> void:
 		var monogram = card.handle.left(2).to_upper()
 		var width = U.DISPLAY.get_string_size(monogram, HORIZONTAL_ALIGNMENT_LEFT, -1, 40).x
 		_text(monogram, Vector2(109 - width / 2, 105), 40, Color(color, 0.85))
-		_text("PLAYER SERIES", Vector2(65, 159), 8, color, U.BOLD)
+		_text("CSTCG", Vector2(83, 159), 8, color, U.BOLD)
 	_text(str(card.overall), Vector2(12, 35), 27, U.TEXT)
 	_text(card.role, Vector2(13, 51), 9, color, U.BOLD)
 	_text(card.country, Vector2(154, 22), 11, U.TEXT, U.BOLD)
-	draw_rect(Rect2(1, 175, 188, 3), color)
+	draw_rect(Rect2(10, 175, 170, 1), color)
+	for i in range(int(card.rarity) + 1):
+		draw_line(Vector2(14 + i * 9, 61), Vector2(18 + i * 9, 57), color, 1.5)
 	_text(card.handle, Vector2(12, 204), 20 if card.handle.length() > 8 else 25, U.TEXT)
 	_text(card.name, Vector2(13, 222), 10, U.MUTED, U.BOLD)
 	draw_line(Vector2(13, 234), Vector2(177, 234), U.BORDER, 1)
