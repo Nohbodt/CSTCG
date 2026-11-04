@@ -1,0 +1,14 @@
+{
+  "status": "provisional authored seeds based on supplied radar and inspected STL surfaces",
+  "coordinate_space": "source STL XYZ, Z-up",
+  "landmarks": {
+    "t_spawn": {"name": "T SPAWN", "source": [-18.0, -86.0, 16.504], "kind": "spawn_t"},
+    "ct_spawn": {"name": "CT SPAWN", "source": [20.0, 44.0, 6.381], "kind": "spawn_ct"},
+    "site_a": {"name": "A SITE", "source": [65.0, 54.0, 15.239], "kind": "site"},
+    "site_b": {"name": "B SITE", "source": [-60.0, 60.0, 11.478], "kind": "site"},
+    "mid": {"name": "MID", "source": [0.0, 0.0, 6.381], "kind": "route"},
+    "catwalk": {"name": "CATWALK", "source": [26.0, 20.0, 15.239], "kind": "route"},
+    "a_long": {"name": "A LONG", "source": [75.0, 27.0, 11.427], "kind": "route"},
+    "tunnels": {"name": "TUNNELS", "source": [-42.0, -10.0, 12.708], "kind": "route"}
+  }
+}

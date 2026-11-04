@@ -1,0 +1,9 @@
+*.pdf binary
+*.docx binary
+*.stl binary
+*.obj binary
+*.ttf binary
+*.png binary
+
+# Keep third-party copyright notices verbatim.
+assets/fonts/LICENSE-*.txt -whitespace

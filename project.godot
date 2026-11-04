@@ -1,0 +1,27 @@
+; CSTCG — a Godot 4 desktop prototype.
+config_version=5
+
+[application]
+config/name="CSTCG · Club Circuit"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+config/description="Build your five. Play the circuit. Collect the extraordinary."
+config/icon="res://assets/icon.svg"
+
+[autoload]
+Game="*res://scripts/club_state.gd"
+
+[display]
+window/size/viewport_width=1440
+window/size/viewport_height=960
+window/size/window_width_override=1440
+window/size/window_height_override=960
+window/size/min_width=1100
+window/size/min_height=740
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.043, 0.051, 0.063, 1)

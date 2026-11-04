@@ -1,0 +1,33 @@
+{
+  "source_filename": "de_dust2+CS2+map.stl",
+  "source_sha256": "4cd8a27780b5cd3f3c8d1159bd113b103eb3fa95a492c86a2ecfda629695de2c",
+  "obj_sha256": "e7a3e03891c7e4646db620cf55401f519144928a281c911cd73fd7dcdb6cb055",
+  "source_triangles": 49636,
+  "render_collision_triangles": 49610,
+  "degenerate_faces_removed": 26,
+  "unique_vertices": 24872,
+  "source_bounds": {
+    "minimum": [
+      -82.59010314941406,
+      -100.58568572998047,
+      3.624858856201172
+    ],
+    "maximum": [
+      89.61952209472656,
+      76.66791534423828,
+      27.89354705810547
+    ]
+  },
+  "source_origin": [
+    3.51470947265625,
+    -11.958885192871094,
+    3.624858856201172
+  ],
+  "source_axis_up": "Z",
+  "game_axis_up": "Y",
+  "scale": 0.6,
+  "transform": "X=(x-origin_x)*scale, Y=(z-min_z)*scale, Z=-(y-origin_y)*scale",
+  "scale_status": "provisional gameplay scale; original STL has no physical-unit metadata",
+  "geometry_repairs": [],
+  "navigation_is_derived": true
+}
