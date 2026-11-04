@@ -106,7 +106,7 @@ Aim 85 | Reaction 84 | Positioning 79 | Utility 74 | Gamesense 77 | Clutch 75 | 
 
 **SERIES 1 / ORIGINAL · Uncommon · ENTRY · T5 · RO**
 
-Public identity: Ivan Mihai. Stable player ID: `im`. Card definition: `s1.base.im`.
+Public identity: Mihai Ivan. Stable player ID: `im`. Card definition: `s1.base.im`.
 
 OVR **80**. Face indices: **AIM 86 / IQ 79 / UTIL 79**.
 

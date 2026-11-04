@@ -62,7 +62,7 @@ ENTRY|rain|rain|Håvard Nygaard|NO|Common|86 80 82 77 82 79 84 82|trade_runner|S
 ENTRY|patsi|Patsi|Robert Isyanov|RU|Common|81 82 70 67 70 69 73 67|close_quarters|Corner Turn|An abrupt right-angle passage with a short amber edge; close crop and compact negative space.
 ENTRY|boros|BOROS|Mohammad Malhas|JO|Common|85 86 68 63 67 70 68 64|first_contact|Open Lane|One vivid opening in a charcoal wall with two converging speed cuts; warm edge light.
 ENTRY|brollan|Brollan|Ludvig Brolin|SE|Uncommon|85 84 79 74 77 75 79 75|trade_runner|Second Wave|Twin offset breach planes with the second line held in reserve; pale green side light.
-ENTRY|im|iM|Ivan Mihai|RO|Uncommon|86 83 80 77 81 78 81 77|close_quarters|Inside Track|A clean inner-corner cut and a dotted support path; balanced light with a soft mint edge.
+ENTRY|im|iM|Mihai Ivan|RO|Uncommon|86 83 80 77 81 78 81 77|close_quarters|Inside Track|A clean inner-corner cut and a dotted support path; balanced light with a soft mint edge.
 ENTRY|xantares|XANTARES|İsmail Dörtkardeş|TR|Semi-Rare|94 90 80 73 80 79 77 81|first_contact|Contact Point|A single bright horizontal contact slash across a wide dark opening; ice-cyan edge reflections.
 ENTRY|elige|EliGE|Jonathan Jablonowski|US|Semi-Rare|91 87 84 80 84 81 85 83|trade_runner|Measured Burst|Three restrained parallel burst marks behind a stable vertical portrait; cyan-white rim light.
 ENTRY|flamez|flameZ|Shahar Shushan|IL|Rare|89 91 82 80 83 80 87 81|first_contact|Ignition|A rising folded wedge with a small warm core and blue perimeter; no literal flames over the face.
