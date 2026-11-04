@@ -3,7 +3,7 @@ extends RefCounted
 
 const ROLES = ["ENTRY", "AWPER", "IGL", "SUPPORT", "LURKER"]
 const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
-const COLORS = [Color("8eaaa6"), Color("69adf3"), Color("b5a0ff"), Color("f2c66c")]
+const COLORS = [Color("a2adc6"), Color("53aeff"), Color("a66bff"), Color("eee4ff")]
 const QUICK_SELL = [8, 20, 55, 150]
 const MAPS = ["DE / DUST II"]
 const MAP_ROLES = ["SUPPORT"]
@@ -11,10 +11,10 @@ const LEGACY_MAPS = ["DE / OVERPASS", "DE / MIRAGE", "DE / ANCIENT"]
 const TACTICS = ["BALANCED", "FAST EXECUTE", "MAP CONTROL"]
 const PACKS = {
 	"contender": {"name": "CONTENDER", "subtitle": "A new name. A new possibility.", "price": 200,
-		"color": Color("f0804b"), "base_weights": [65, 28, 6, 1], "last_weights": [0, 80, 18, 2],
+		"color": Color("53aeff"), "flair": 0, "base_weights": [65, 28, 6, 1], "last_weights": [0, 80, 18, 2],
 		"guarantee": "1 RARE OR BETTER", "short": "The foundation of your next five."},
 	"elite": {"name": "ELITE CIRCUIT", "subtitle": "For the moments that define a club.", "price": 600,
-		"color": Color("ddb56e"), "base_weights": [30, 50, 17, 3], "last_weights": [0, 0, 90, 10],
+		"color": Color("a66bff"), "flair": 2, "base_weights": [30, 50, 17, 3], "last_weights": [0, 0, 90, 10],
 		"guarantee": "1 EPIC OR BETTER", "short": "Bigger stages. Exceptional talent."}
 }
 

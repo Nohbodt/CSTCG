@@ -22,7 +22,7 @@ var previous_position = Vector3.ZERO
 var ring: MeshInstance3D
 
 func _ready() -> void:
-	var color = U.ORANGE if team == 0 else Color("69adf3")
+	var color = U.BLUE if team == 0 else U.RED
 	var mesh = MeshInstance3D.new()
 	var capsule = CapsuleMesh.new()
 	capsule.radius = 0.29

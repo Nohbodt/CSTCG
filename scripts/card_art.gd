@@ -35,27 +35,32 @@ func _draw() -> void:
 	var offset = (size - Vector2(190, 290) * scale_factor) * 0.5
 	draw_set_transform(offset, 0, Vector2.ONE * scale_factor)
 	if face_down:
-		var back = U.box(Color("19212a"), 8, Color("52616f"), 0)
+		var back = U.box(Color("1b142f"), 8, U.PURPLE, 0)
 		draw_style_box(back, Rect2(0, 0, 190, 290))
 		for i in range(12):
-			_stripe(Vector2(i * 24 - 150, 289), Vector2(i * 24 + 90, 1), Color("293440"))
-		draw_circle(Vector2(95, 134), 38, Color("202b36"))
-		draw_arc(Vector2(95, 134), 40, 0, TAU, 48, U.ORANGE, 1.4)
-		_text("CSTCG", Vector2(41, 143), 28, U.ORANGE)
+			_stripe(Vector2(i * 24 - 150, 289), Vector2(i * 24 + 90, 1), Color("312346"))
+		draw_circle(Vector2(95, 134), 38, Color("261a3b"))
+		draw_arc(Vector2(95, 134), 40, 0, TAU, 48, U.BLUE, 1.4)
+		_text("CSTCG", Vector2(39, 144), 28, Color(U.RED, 0.5))
+		_text("CSTCG", Vector2(43, 141), 28, Color(U.BLUE, 0.5))
+		_text("CSTCG", Vector2(41, 143), 28, U.TEXT)
 		_text("PLAYER COLLECTION", Vector2(30, 216), 12, U.TEXT)
 		_text("REVEAL YOUR NEXT", Vector2(35, 237), 10, U.MUTED, U.BOLD)
 		return
 	if card.is_empty():
 		return
 	var color = C.COLORS[card.rarity]
-	var border = U.ORANGE if selected else Color(color, 0.5)
-	draw_style_box(U.box(Color("151c24"), 7, border, 0), Rect2(0, 0, 190, 290))
+	var border = U.BLUE if selected else Color(color, 0.6)
+	draw_style_box(U.box(Color("181226"), 7, border, 0), Rect2(0, 0, 190, 290))
 	draw_rect(Rect2(1, 1, 188, 175), Color(color, 0.08))
 	draw_style_box(U.box(Color.TRANSPARENT, 5, Color(color, 0.18), 0), Rect2(5, 5, 180, 280))
 	# Real identities use a supplied portrait when available; the alpha fallback
 	# is a neutral nameplate, never an invented face presented as the player.
 	for i in range(7):
 		_stripe(Vector2(-20 + i * 37, 174), Vector2(100 + i * 37, 1), Color(color, 0.13))
+	draw_colored_polygon(PackedVector2Array([Vector2(132, 8), Vector2(182, 8), Vector2(182, 93)]), Color(U.PURPLE, 0.09))
+	draw_line(Vector2(8, 24), Vector2(8, 169), Color(U.BLUE, 0.28), 1)
+	draw_line(Vector2(181, 87), Vector2(181, 170), Color(U.RED, 0.18), 1)
 	if ResourceLoader.exists(card.get("portrait", "")):
 		var portrait: Texture2D = load(card.portrait)
 		var target = Rect2(51, 8, 130, 166)

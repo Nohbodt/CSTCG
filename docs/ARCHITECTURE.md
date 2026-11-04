@@ -10,6 +10,9 @@
 | `scripts/match_simulator.gd` | Seeded aggregate round simulation used by Skip to result |
 | `scripts/main.gd` | UI routing, state presentation, confirmations, pack reveal, pre-match chooser, saved reports |
 | `scripts/ui.gd` | Shared theme, typography, colors, controls |
+| `scripts/presentation/collectible_stage.gd` | Isolated physical pack/card meshes, local 3D viewport, foil materials, sound and cancellable visual tweens |
+| `scripts/presentation/pack_opening.gd` | Opening controls and presentation synchronization against already committed contents |
+| `scripts/presentation/*.gdshader` | GL Compatibility foil/interference treatments; printed text protected from effects |
 | `scripts/card_art.gd`, `pack_art.gd`, `arena_art.gd` | Optional photographic cards with neutral fallback, printed pack art, rendered Dust II menu artwork |
 | `tools/capture_menu_map.gd`, `assets/ui/dust2_preview.png` | Reproducible menu thumbnail captured from the supplied 3D map |
 | `scripts/spatial/dust_world.gd` | Uploaded map, shared render/collision faces, derived navigation, physical movement and ray queries |
@@ -28,6 +31,10 @@ Game logic is separate from rendering. `CardCatalog` and `MatchSimulator` are `R
 Alpha 0.3 uses native window dimensions rather than scaling a fixed canvas. The sidebar stays fixed, collection columns adapt to the available width, and long pages scroll vertically. Dialogs fit within the window, scroll their content, trap Tab focus, and restore the triggering control on dismissal. Collection filtering rebuilds only the card grid so search typing retains focus. Closing a pack dialog cancels its presentation tween; secured inventory and reveal progress remain in `Game`.
 
 The reduced-motion preference is stored separately in `user://ui_preferences.cfg`; ephemeral tests neither read nor write it. The existing club schema, catalogue identities, odds, prices and reward calculations are unchanged. Regenerate the menu map image on a graphical display with `godot --path . --script res://tools/capture_menu_map.gd -- --ephemeral`, then review and commit the PNG. The helper is excluded from portable exports.
+
+Alpha 0.4 uses the Phase Shift palette and adds 3D collectible/sound preferences to that same settings file. `PackOpening` commits a requested reveal through `Game` before asking `CollectibleStage` to flip cards. Closing the stage kills its tween. Skipping finishes only the current presentation target, and reduced motion uses immediate static states. These components never use `Game.rng`. The more expensive Elite product chooses a richer visual profile through catalogue metadata; that profile cannot alter its existing odds or contents. Collection grids remain static 2D controls. A selectable 2D stage fallback supports lightweight previews.
+
+Pack art and card faces are rendered once into local textures, with printed values coming from existing definitions. Shared meshes provide physical thickness and foil layers; the material masks protect bright printed text. Only the selected stage renders in 3D, and reduced-motion stages freeze after warming their textures. `tools/capture_phase_shift_brand.gd` renders the lightweight menu wordmark; `tools/generate_pack_audio.py` synthesizes the original bundled sounds without external dependencies.
 
 ## Transaction boundaries
 
@@ -49,6 +56,8 @@ Saves use `FileAccess` and `DirAccess` with a `.tmp` write-and-rename. Godot JSO
 `bash tools/check.sh` creates temporary XDG directories, imports assets, runs state tests, and launches the UI with `--ephemeral --ui-smoke`. The UI test uses button signals and assertions, exercises 1100×740 and 1440×960 layouts, checks visible dialog actions, filters and focus, and dismisses/resumes a pack during its tear animation. Headless mode exercises layout and control construction but cannot capture pixels. On a graphical display, add `--capture-dir=...` to produce a PNG for each route plus dialogs, sealed pack, reveal, and result.
 
 The state suite uses fixed seeds and exercises actual pack generation, lineup and trade mutations, 180 starter-vs-elite simulation pairs, progression, and disk writes. Thousands of checks include per-round budget and probability bounds; this is not a claim of thousands of independent scenarios.
+
+The additional `--ephemeral --pack-smoke` flow runs both pack profiles, completes normal and skipped reveals, tests interrupted flip resume and mid-opening inspection, checks that visual actions preserve secured contents and gameplay RNG, loads the bundled audio, and exercises reduced motion and the 2D fallback. Use `--fixed-fps 60 --quit-after 2200`; add `--capture-dir=...` on a graphical display to review meshes/shaders. `--record-packs` captures sampled animation frames for a silent preview clip.
 
 The spatial suite imports the actual map and queries Godot physics/navigation. It traverses each key route in both directions, verifies capsule clearance at every step, and checks floor/wall occlusion. The developer lab grants no rewards. `SpatialMatchSim` uses the same world for played matches: routes are physically validated once and cached for the static geometry, perception and shots query real rays, and significant actual events produce the saved report. Rendering and speed changes do not consume simulation RNG. [Map integration](MAP_INTEGRATION.md) documents the source transform, authoring controls, limitations, and geometry tests.
 

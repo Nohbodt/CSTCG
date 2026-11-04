@@ -62,11 +62,11 @@ func _build_ui() -> void:
 	margin.add_child(shell)
 	var header = U.hbox(16)
 	var titles = U.vbox(3)
-	titles.add_child(U.label("CSTCG / MAP TOOLS", 10, U.ORANGE, true))
+	titles.add_child(U.label("CSTCG / MAP TOOLS", 10, U.PURPLE, true))
 	titles.add_child(U.label("DUST II / SPATIAL LAB", 28, U.TEXT, true))
 	header.add_child(titles)
 	header.add_child(U.spacer())
-	header.add_child(U.badge("USER-SUPPLIED STL", U.LIME))
+	header.add_child(U.badge("USER-SUPPLIED STL", U.BLUE))
 	header.add_child(U.button("Back to club   →", func(): get_tree().change_scene_to_file(MAIN)))
 	shell.add_child(header)
 	var layout = U.hbox(16)
@@ -80,7 +80,7 @@ func _build_ui() -> void:
 	var controls = U.vbox(15)
 	controls.custom_minimum_size.x = 282
 	scroll.add_child(controls)
-	status = U.paragraph("Importing geometry and validating navigation…", 12, U.LIME)
+	status = U.paragraph("Importing geometry and validating navigation…", 12, U.BLUE)
 	controls.add_child(U.panel(status))
 	controls.add_child(U.section("01 / ROUTE PREVIEW"))
 	from_select = _selector(["T SPAWN", "CT SPAWN", "A SITE", "B SITE", "MID", "CATWALK", "A LONG", "TUNNELS"])
@@ -135,7 +135,7 @@ func _build_ui() -> void:
 	var footer = U.hbox()
 	footer.add_child(U.label("COLLISION + NAVIGATION + EYE-LEVEL RAYS", 10, U.MUTED, true))
 	footer.add_child(U.spacer())
-	footer.add_child(U.label("GEOMETRY TEST SCENE / NO MATCH SIMULATION", 10, U.ORANGE, true))
+	footer.add_child(U.label("GEOMETRY TEST SCENE / NO MATCH SIMULATION", 10, U.PURPLE, true))
 	shell.add_child(footer)
 
 func _selector(items: Array) -> OptionButton:
@@ -192,7 +192,7 @@ func _add_landmarks() -> void:
 		label.position.y = 2.6
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		label.no_depth_test = true
-		label.modulate = U.LIME if id.begins_with("site") else Color("c9d4dd")
+		label.modulate = U.BLUE if id.begins_with("site") else Color("c9d4dd")
 		node.add_child(label)
 		if definition.kind.begins_with("spawn") or definition.kind == "site":
 			var mesh = MeshInstance3D.new()
@@ -202,7 +202,7 @@ func _add_landmarks() -> void:
 			cylinder.height = 0.06
 			mesh.mesh = cylinder
 			mesh.position.y = 0.1
-			mesh.material_override = _material(Color(U.LIME if definition.kind == "site" else U.ORANGE, 0.35), true)
+			mesh.material_override = _material(Color(U.BLUE if definition.kind == "site" else U.PURPLE, 0.35), true)
 			node.add_child(mesh)
 
 func _material(color: Color, xray: bool = false) -> StandardMaterial3D:
@@ -245,7 +245,7 @@ func _preview() -> void:
 	var length = 0.0
 	for i in range(1, preview_path.size()):
 		length += preview_path[i].distance_to(preview_path[i - 1])
-	_draw_line(route_visual, preview_path, U.ORANGE, true)
+	_draw_line(route_visual, preview_path, U.PURPLE, true)
 	metrics.text = "%.1f game units · %d corners\n%.1fs at test speed 5.0" % [length, preview_path.size(), length / 5.0]
 
 func _draw_line(parent: Node3D, points: PackedVector3Array, color: Color, xray: bool = false, lift: float = 0.2) -> void:
@@ -395,7 +395,7 @@ func _probe_sight(feet: Vector3) -> void:
 	world.add_child(sight_visual)
 	var collision = world.ray(sight_start, point)
 	var clear = collision.is_empty()
-	var sight_color = U.LIME if clear else Color("ee6f77")
+	var sight_color = U.BLUE if clear else Color("ee6f77")
 	_draw_line(sight_visual, PackedVector3Array([sight_start, point]), sight_color, true, 0.0)
 	if not clear:
 		var marker = MeshInstance3D.new()

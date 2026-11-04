@@ -9,8 +9,9 @@ var animate = true
 var clock = 0.0
 
 func _ready() -> void:
-	custom_minimum_size = custom_minimum_size.max(Vector2(180, 250) if not large else Vector2(260, 350))
-	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if not has_meta("thumbnail"):
+		custom_minimum_size = custom_minimum_size.max(Vector2(180, 250) if not large else Vector2(260, 350))
+	size_flags_horizontal = Control.SIZE_FILL if has_meta("thumbnail") else Control.SIZE_EXPAND_FILL
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_to_group("pack_art")
 	resized.connect(queue_redraw)
@@ -33,10 +34,17 @@ func _draw() -> void:
 	draw_set_transform(offset, -0.018, Vector2.ONE * factor)
 	var pack = C.PACKS[pack_id]
 	var color = pack.color
-	var premium = pack_id == "elite"
+	var premium = pack.get("flair", 0) > 0
 	draw_style_box(U.box(Color(0, 0, 0, 0.4), 4, Color.TRANSPARENT, 0), Rect2(20, 16, 211, 295))
 	draw_colored_polygon(PackedVector2Array([Vector2(18, 5), Vector2(222, 5), Vector2(230, 309), Vector2(10, 309)]), color.darkened(0.48))
-	draw_colored_polygon(PackedVector2Array([Vector2(20, 20), Vector2(220, 20), Vector2(228, 293), Vector2(12, 293)]), Color("101823"))
+	draw_colored_polygon(PackedVector2Array([Vector2(20, 20), Vector2(220, 20), Vector2(228, 293), Vector2(12, 293)]), Color("171025"))
+	# Printed interference planes remain still in lightweight/reduced-motion views.
+	for i in range(8):
+		var x = 15 + i * 26
+		var sheen = Color(color.lerp(U.PURPLE, 0.45), 0.07 + (i % 3) * 0.035)
+		draw_colored_polygon(PackedVector2Array([Vector2(x, 22), Vector2(mini(x + 36, 218), 22), Vector2(mini(x + 8, 218), 292), Vector2(maxi(x - 22, 15), 292)]), sheen)
+	draw_line(Vector2(19, 26), Vector2(12, 291), U.BLUE, 1.6)
+	draw_line(Vector2(221, 26), Vector2(228, 291), Color(U.RED, 0.7), 1.6)
 	for i in range(18):
 		var x = 22 + i * 11
 		draw_line(Vector2(x, 6), Vector2(x - 1, 18), color.lightened(0.2), 2)
@@ -45,6 +53,10 @@ func _draw() -> void:
 		var x = 36 + i * 39
 		draw_line(Vector2(x, 76), Vector2(x - 40, 207), Color(color, 0.09), 1)
 	draw_line(Vector2(25, 203), Vector2(214, 104), Color(color, 0.16), 1)
+	for i in range(4 if premium else 2):
+		var y = 110 + i * 32
+		draw_rect(Rect2(21, y, 13 + i * 3, 2), Color(U.BLUE, 0.65))
+		draw_rect(Rect2(207 - i * 2, y + 3, 12, 2), Color(U.RED, 0.5))
 	_text("CSTCG", Vector2(29, 56), 29, U.TEXT, U.DISPLAY)
 	_text("ALPHA COLLECTION", Vector2(30, 73), 8, color)
 	draw_line(Vector2(29, 85), Vector2(211, 85), Color(color, 0.35), 1)
@@ -57,6 +69,7 @@ func _draw() -> void:
 		for i in range(5):
 			var angle = -PI / 2 + i * TAU / 5
 			draw_line(Vector2(120, 145), Vector2(120, 145) + Vector2(cos(angle), sin(angle)) * 47, color.lightened(0.3), 1)
+			draw_colored_polygon(PackedVector2Array([Vector2(120, 145), star[i * 2], star[(i * 2 + 1) % 10]]), color.lerp(U.TEXT, 0.45))
 	else:
 		draw_arc(Vector2(120, 145), 44, PI * 0.23, PI * 1.77, 30, color, 12, true)
 		draw_line(Vector2(84, 173), Vector2(156, 116), color.lightened(0.25), 2)

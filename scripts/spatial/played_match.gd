@@ -4,7 +4,7 @@ const U = preload("res://scripts/ui.gd")
 const World = preload("res://scripts/spatial/dust_world.gd")
 const Live = preload("res://scripts/spatial/spatial_match_sim.gd")
 const MAIN = "res://scenes/main.tscn"
-const TEAM_COLORS = [Color("c4df86"), Color("69adf3")]
+const TEAM_COLORS = [U.BLUE, U.RED]
 const SPEEDS = [1, 2, 4, 8, 16]
 
 var world: DustWorld
@@ -78,7 +78,7 @@ func _build_ui() -> void:
 	margin.add_child(shell)
 	var header = U.hbox(18)
 	var title = U.vbox(3)
-	title.add_child(U.label("CSTCG / THE OPEN CIRCUIT", 10, U.ORANGE, true))
+	title.add_child(U.label("CSTCG / THE OPEN CIRCUIT", 10, U.PURPLE, true))
 	title.add_child(U.label("DUST II", 28, U.TEXT, true))
 	header.add_child(title)
 	header.add_child(U.spacer())
@@ -93,7 +93,7 @@ func _build_ui() -> void:
 	phase_label = U.label("PREPARING THE SERVER", 12, U.TEXT, true)
 	ribbon.add_child(phase_label)
 	ribbon.add_child(U.spacer())
-	bomb_label = U.label("BOMB / CARRIED", 12, U.ORANGE, true)
+	bomb_label = U.label("BOMB / CARRIED", 12, U.PURPLE, true)
 	ribbon.add_child(bomb_label)
 	clock_label = U.label("01:40", 22, U.TEXT, true)
 	ribbon.add_child(clock_label)
@@ -158,7 +158,7 @@ func _build_ui() -> void:
 	feed.scroll_following = true
 	feed_column.add_child(feed)
 	shell.add_child(U.panel(feed_column, U.SURFACE, 12))
-	shell.add_child(U.label("Wheel: zoom   ·   Middle-drag: pan   ·   Select a player to follow   ·   Lime: your club / Blue: opposition", 10, U.MUTED))
+	shell.add_child(U.label("Wheel: zoom   ·   Middle-drag: pan   ·   Select a player to follow   ·   Blue: your club / Red: opposition", 10, U.MUTED))
 
 func _start() -> void:
 	var active = Game.data.active_match
@@ -208,7 +208,7 @@ func _create_markers() -> void:
 		cylinder.height = 0.035
 		marker.mesh = cylinder
 		marker.position = site.position + Vector3.UP * 0.03
-		marker.material_override = _material(Color(U.ORANGE, 0.2))
+		marker.material_override = _material(Color(U.PURPLE, 0.2))
 		world.add_child(marker)
 		var label = Label3D.new()
 		label.text = "A" if id == "site_a" else "B"
@@ -218,7 +218,7 @@ func _create_markers() -> void:
 		label.position = site.position + Vector3.UP * 2.8
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		label.no_depth_test = true
-		label.modulate = U.ORANGE
+		label.modulate = U.PURPLE
 		world.add_child(label)
 	for i in range(10):
 		var actor = Node3D.new()
@@ -263,7 +263,7 @@ func _create_markers() -> void:
 	var box = BoxMesh.new()
 	box.size = Vector3(0.65, 0.3, 0.5)
 	bomb_node.mesh = box
-	bomb_node.material_override = _material(U.ORANGE, true)
+	bomb_node.material_override = _material(U.PURPLE, true)
 	world.add_child(bomb_node)
 
 func _process(delta: float) -> void:

@@ -13,7 +13,7 @@ On Linux, the portable build runs with `./CSTCG.x86_64` after extracting its arc
 ## Suggested first test
 
 1. Open **Packs**. You begin with two Contender packs and 800 credits.
-2. Open a pack, tear the wrapper, reveal one card, then press **Escape**. **Resume opening** should return to the same secured cards and reveal position. Reveal the rest and select **Build your five**.
+2. Click a wrapper to inspect its foil, guarantee and exact odds. Open a pack, tear the wrapper, reveal one card, then press **Escape** during a flip. **Resume opening** should return to the same secured cards and committed reveal position. Inspect a revealed card, return to the opening, reveal the rest and select **Build your five**.
 3. Add a new player to the lineup. The previous player should remain in your collection.
 4. Search **Collection** by player handle or real name. Clear the filters, inspect a card, use **Tab** within the dialog, then press **Escape** to return focus to that card.
 5. Try a local AI trade at **Trades**. The last copy of an active player stays protected.
@@ -24,9 +24,10 @@ On Linux, the portable build runs with `./CSTCG.x86_64` after extracting its arc
 10. Open **Help & settings → Open 3D map lab**. Try an overhead/angled view, select a route, and use **Reset & walk route**.
 11. In the map lab, Shift-click two walkable surfaces to inspect a sightline. Middle-drag pans; the wheel zooms; V changes the view.
 12. Return to the club, resize to 1100×740, and check the menus, player profile, pack reveal, and match choice. Primary actions should fit, with longer pages scrolling vertically.
-13. Enable **Reduce motion**, close the game, and reopen it. Your preference, cards, credits, lineup, and match history should remain.
+13. Buy an **Elite Circuit** pack for 600 CR and compare its longer charge, raised crest, extra fragments and sounds with Contender. A new club starts with enough credits to try one. Use **Skip animation** during the tear and again during a reveal; it should finish only the current transition.
+14. Enable **Reduce motion**. In **Help & settings**, also try disabling **3D collectible previews** and **Pack sound effects**. Close and reopen the game. Your preferences, cards, credits, lineup, and match history should remain.
 
-This is **alpha 0.3**, the menu refresh. The playable collection remains thirty players with Contender and Elite Circuit packs; the four Series 1 products are design specifications. Dust II is the alpha's only match map. The separate map lab remains a geometry tool and does not affect your club. Played matches use causal movement, combat and bomb objectives; skipped matches use the original aggregate simulation. See [menu notes](docs/UI_PASS_0_3.md) and [match rules](docs/ALPHA_0_2.md) in the source ZIP. Real public player identities have custom alpha roles/stats and neutral monograms; photographic portraits are not bundled. Trades use local AI managers.
+This is **alpha 0.4 / Phase Shift**, with 3D collectible presentation and premium pack animations. The playable collection remains thirty players with Contender and Elite Circuit packs; the four Series 1 products are design specifications. Dust II is the alpha's only match map. The separate map lab remains a geometry tool and does not affect your club. Played matches use causal movement, combat and bomb objectives; skipped matches use the original aggregate simulation. See [current build notes](docs/ALPHA_0_4.md) and [match rules](docs/ALPHA_0_2.md) in the source ZIP. Real public player identities have custom alpha roles/stats and neutral monograms; photographic portraits are not bundled. Trades use local AI managers.
 
 ## Saves and reports
 
