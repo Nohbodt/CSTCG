@@ -35,8 +35,20 @@ def tear(t, seconds, rng):
 def elite(t, seconds, rng):
     swell = math.sin(math.pi * t / seconds) ** 1.2
     chord = sum(math.sin(2 * math.pi * f * t) for f in (164.81, 246.94, 329.63)) / 3
-    rustle = tear(max(0, t - 0.57), 0.38, rng) if 0.57 < t < 0.95 else 0
-    return chord * swell * 0.16 + rustle
+    return chord * swell * 0.16
+
+
+def burst(t, seconds, rng):
+    attack = min(1, t * 500)
+    bass = math.sin(2 * math.pi * (90 * t - 28 * t * t)) * math.exp(-t * 9)
+    crackle = rng.uniform(-1, 1) * math.exp(-t * 17) * 0.45
+    shimmer = sum(math.sin(2 * math.pi * f * t) for f in (660, 990, 1320)) / 3
+    return attack * (bass * 0.24 + crackle + shimmer * math.exp(-t * 6) * 0.08)
+
+
+def premium_burst(t, seconds, rng):
+    resonance = (math.sin(2 * math.pi * 164.81 * t) + math.sin(2 * math.pi * 329.63 * t)) * math.exp(-t * 4) * 0.05
+    return burst(t, seconds, rng) + resonance * min(1, t * 500)
 
 
 def card(t, seconds, rng):
@@ -46,6 +58,8 @@ def card(t, seconds, rng):
 
 
 if __name__ == "__main__":
-    write("pack_tear", 0.5, tear)
-    write("elite_charge", 1.7, elite)
+    write("pack_tear", 2.05, tear)
+    write("elite_charge", 0.8, elite)
+    write("pack_burst", 0.7, burst)
+    write("elite_burst", 0.95, premium_burst)
     write("card_reveal", 0.25, card)

@@ -153,7 +153,7 @@ func _build_shell() -> void:
 	motion_control.add_theme_font_size_override("font_size", 11)
 	motion_control.toggled.connect(_set_reduced_motion)
 	side.add_child(motion_control)
-	side.add_child(U.label("PHASE SHIFT / v0.4", 9, U.MUTED))
+	side.add_child(U.label("PHASE SHIFT / v0.4.1", 9, U.MUTED))
 	var sidebar = U.panel(side, Color("140e24"), 16)
 	sidebar.custom_minimum_size.x = NAV_WIDTH
 	sidebar.size_flags_horizontal = Control.SIZE_FILL
@@ -1230,10 +1230,11 @@ func _pack_smoke() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	Game.rng.seed = 914
-	for id in ["pack_tear", "elite_charge", "card_reveal"]:
+	for id in ["pack_tear", "elite_charge", "pack_burst", "elite_burst", "card_reveal"]:
 		_smoke_expect(load("res://assets/audio/" + id + ".wav") is AudioStream, "original pack sound is bundled: " + id)
 	motion_control.button_pressed = false
 	pack_sound = false
+	var previous_tear_duration = 0.0
 	for id in ["contender", "elite"]:
 		navigate(2)
 		if Game.data.packs[id] == 0:
@@ -1245,10 +1246,16 @@ func _pack_smoke() -> void:
 		var stage = opening.stage
 		var secured = Game.data.pending_pack.duplicate(true)
 		var rng_state = Game.rng.state
+		var steps: Array = []
+		var step_times: Dictionary = {}
+		stage.opening_step_changed.connect(func(step: String):
+			steps.append(step)
+			step_times[step] = stage.clock)
 		_smoke_expect(stage.flair == C.PACKS[id].flair, "visual profile follows product metadata")
 		if is_instance_valid(stage.viewport):
 			_smoke_expect(stage.card_roots.size() == secured.cards.size(), "3D fan has one mesh per secured card")
 			_smoke_expect(stage.shards.size() == Collectible.fragment_count(stage.flair), "premium fragment budget is applied")
+			_smoke_expect(stage.effects.spark_pool.multimesh.instance_count >= 72, "3D burst has a real spark pool")
 		await _capture("%s_00_sealed" % id)
 		_smoke_press("Tear open   →")
 		_smoke_expect(opening.transition and stage.phase == "opening", "tear starts a real presentation transition")
@@ -1257,6 +1264,12 @@ func _pack_smoke() -> void:
 		opening._reveal(true)
 		_smoke_expect(Game.data.pending_pack == secured and Game.rng.state == rng_state, "tearing never changes contents or reveal progress")
 		await _wait_presentation(stage, id + "_tear")
+		_smoke_expect(steps == ["charging", "tearing", "bursting", "fanning", "idle"], "slow tear finishes before explosive card fan")
+		var tear_duration = step_times.get("bursting", 0.0) - step_times.get("tearing", 0.0)
+		_smoke_expect(tear_duration >= 1.25, "tear is deliberate rather than an instant transition")
+		if id == "elite":
+			_smoke_expect(tear_duration >= previous_tear_duration + 0.6, "premium opening gets a longer buildup")
+		previous_tear_duration = tear_duration
 		_smoke_expect(not stage.sealed and stage.phase == "idle", "tear reaches concealed card fan")
 		await _capture("%s_01_fan" % id)
 		_smoke_press("Reveal card 1 / 5   →")
@@ -1287,8 +1300,23 @@ func _pack_smoke() -> void:
 	navigate(2)
 	_open_pack("contender")
 	var opening = modal.find_child("PackOpening", true, false)
-	opening.stage.play_open()
+	for step in ["tearing", "bursting"]:
+		opening._tear()
+		await _wait_opening_step(opening.stage, step)
+		var before_close = Game.data.duplicate(true)
+		_close_modal()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_smoke_expect(not is_instance_valid(modal) and Game.data == before_close, "closing during " + step + " preserves secured results")
+		_show_pack(true)
+		opening = modal.find_child("PackOpening", true, false)
+		_smoke_expect(opening.stage.sealed and opening.stage.revealed == 0, "interrupted visual opening resumes without revealing cards")
+	opening._tear()
+	await _wait_opening_step(opening.stage, "bursting")
 	opening.stage.skip_animation()
+	_smoke_expect(opening.stage.revealed == 0, "skipping the tear never reveals an unrequested card")
+	if is_instance_valid(opening.stage.effects):
+		_smoke_expect(not opening.stage.effects.visible, "skipping the burst clears its glow and sparks")
 	opening._reveal(false)
 	var saved = Game.data.duplicate(true)
 	_close_modal()
@@ -1304,22 +1332,35 @@ func _pack_smoke() -> void:
 	_set_3d_collectibles(false)
 	_smoke_expect(is_instance_valid(opening.stage.fallback), "lightweight previews have a real static fallback")
 	_smoke_press("Build your five   →")
-	print("CSTCG_PACK_UI: standard and premium 3D tear/fan/flip, skip, inspection, interrupted flip resume, reduced motion, lightweight fallback; %d failures" % smoke_failures)
+	print("CSTCG_PACK_UI: slow tear before burst, standard/premium glow and sparks, skip, tear/burst/flip resume, inspection, reduced motion, fallback; %d failures" % smoke_failures)
 	get_tree().quit(0 if smoke_failures == 0 else 1)
 
 func _wait_presentation(stage: Control, capture_name: String) -> void:
 	var finished = false
+	var captured_steps: Array = []
 	for frame in range(360):
 		if stage.phase == "idle":
 			finished = true
 			break
+		if stage.opening_step == "tearing":
+			_smoke_expect(stage.explosion_age < 0 and stage.revealed == 0, "cards stay concealed throughout the slow tear")
+		if stage.opening_step != "idle" and not stage.opening_step in captured_steps:
+			captured_steps.append(stage.opening_step)
+			await _capture(capture_name + "_" + stage.opening_step)
 		if frame == 16:
 			await _capture(capture_name + "_mid")
-		if "--record-packs" in OS.get_cmdline_user_args() and frame % 4 == 0:
+		if "--record-packs" in OS.get_cmdline_user_args():
 			await _capture("movie_%04d" % recorded_frames)
 			recorded_frames += 1
 		await get_tree().process_frame
 	_smoke_expect(finished, "presentation completes within 360 frames: " + capture_name)
+
+func _wait_opening_step(stage: Control, step: String) -> void:
+	for frame in range(300):
+		if stage.opening_step == step:
+			return
+		await get_tree().process_frame
+	_smoke_expect(false, "opening reaches interruption point: " + step)
 
 func _smoke_layout(context: String) -> void:
 	_smoke_expect(scroll.get_global_rect().end.x <= size.x + 1, context + ": workspace fits window")

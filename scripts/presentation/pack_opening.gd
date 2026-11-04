@@ -20,6 +20,7 @@ var status: Label
 var footer: Label
 var pack_id = "contender"
 var transition = false
+var transition_kind = "open"
 
 func _ready() -> void:
 	name = "PackOpening"
@@ -48,6 +49,7 @@ func _ready() -> void:
 	stage.sound_enabled = sound_enabled
 	stage.custom_minimum_size.y = 260 if get_viewport_rect().size.y < 820 else 345
 	stage.animation_finished.connect(_animation_done)
+	stage.opening_step_changed.connect(_update_opening_status)
 	add_child(stage)
 	names = U.hbox(8)
 	add_child(names)
@@ -73,7 +75,7 @@ func _sync() -> void:
 	_clear(actions)
 	status.text = "%s  /  %d PLAYER CARDS  /  %d OF %d REVEALED" % [pack.guarantee, pending.cards.size(), stage.revealed, pending.cards.size()]
 	if transition:
-		status.text = ("SPECTRAL CHARGE / " if pack.get("flair", 0) > 0 else "BREAKING THE SEAL / ") + "Your cards are secured."
+		_update_opening_status(stage.opening_step)
 		actions.add_child(U.button("Skip animation", stage.skip_animation))
 		footer.text = "Escape closes this opening. Your cards and reveal progress are preserved."
 		return
@@ -105,6 +107,7 @@ func _tear() -> void:
 	if transition:
 		return
 	transition = true
+	transition_kind = "open"
 	_sync()
 	stage.play_open()
 
@@ -115,8 +118,15 @@ func _reveal(all_cards: bool) -> void:
 		footer.text = Game.last_error if not Game.last_error.is_empty() else "The reveal could not be saved. Try again."
 		return
 	transition = true
+	transition_kind = "reveal"
 	_sync()
 	stage.reveal_to(int(Game.data.pending_pack.revealed))
+
+func _update_opening_status(step: String) -> void:
+	if not transition or not is_instance_valid(status):
+		return
+	var captions = {"idle": "BREAKING THE SEAL", "charging": "CHARGING THE FOIL", "tearing": "SLOW TEAR", "bursting": "ENERGY RELEASE", "fanning": "YOUR NEXT SIGNINGS"}
+	status.text = ("REVEALING YOUR SIGNINGS" if transition_kind == "reveal" else captions.get(step, "BREAKING THE SEAL")) + " / Your cards are secured."
 
 func _animation_done(_kind: String) -> void:
 	transition = false

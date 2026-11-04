@@ -7,6 +7,7 @@ var pack_id = "contender"
 var large = false
 var animate = true
 var clock = 0.0
+var printed_crimps = true
 
 func _ready() -> void:
 	if not has_meta("thumbnail"):
@@ -45,10 +46,11 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([Vector2(x, 22), Vector2(mini(x + 36, 218), 22), Vector2(mini(x + 8, 218), 292), Vector2(maxi(x - 22, 15), 292)]), sheen)
 	draw_line(Vector2(19, 26), Vector2(12, 291), U.BLUE, 1.6)
 	draw_line(Vector2(221, 26), Vector2(228, 291), Color(U.RED, 0.7), 1.6)
-	for i in range(18):
-		var x = 22 + i * 11
-		draw_line(Vector2(x, 6), Vector2(x - 1, 18), color.lightened(0.2), 2)
-		draw_line(Vector2(x - 7, 295), Vector2(x - 7, 307), color.lightened(0.1), 2)
+	if printed_crimps:
+		for i in range(18):
+			var x = 22 + i * 11
+			draw_line(Vector2(x, 6), Vector2(x - 1, 18), color.lightened(0.2), 2)
+			draw_line(Vector2(x - 7, 295), Vector2(x - 7, 307), color.lightened(0.1), 2)
 	for i in range(5):
 		var x = 36 + i * 39
 		draw_line(Vector2(x, 76), Vector2(x - 40, 207), Color(color, 0.09), 1)

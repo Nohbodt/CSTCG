@@ -3,6 +3,7 @@ extends Control
 ## Visual-only stage. Secured inventory and reveal progress belong to Game.
 
 signal animation_finished(kind: String)
+signal opening_step_changed(step: String)
 
 const U = preload("res://scripts/ui.gd")
 const C = preload("res://scripts/catalog.gd")
@@ -10,6 +11,7 @@ const Pack = preload("res://scripts/pack_art.gd")
 const Card = preload("res://scripts/card_art.gd")
 const FOIL = preload("res://scripts/presentation/foil.gdshader")
 const PRINT = preload("res://scripts/presentation/printed_foil.gdshader")
+const FX = preload("res://scripts/presentation/opening_effects.gd")
 
 var mode = "pack" # pack, opening, card
 var pack_id = "contender"
@@ -46,6 +48,15 @@ var light: OmniLight3D
 var audio: AudioStreamPlayer
 var camera: Camera3D
 var static_frames = 4
+var opening_step = "idle"
+var tear_progress = 0.0
+var explosion_age = -1.0
+var flip_age = -1.0
+var flip_origin = Vector3.ZERO
+var flip_color = U.BLUE
+var seam_segments: Array[Node3D] = []
+var effects: Node3D
+var rip_line: MeshInstance3D
 
 static func fragment_count(level: int) -> int:
 	return 8 + level * 6
@@ -121,6 +132,11 @@ func _build() -> void:
 		_build_pack()
 	_build_cards()
 	_build_fragments()
+	if mode == "opening":
+		effects = FX.new()
+		effects.level = flair
+		effects.tint = tint
+		world.add_child(effects)
 	if mode == "opening" and not sealed:
 		_set_fan()
 	if mode == "card":
@@ -193,14 +209,23 @@ func _build_pack() -> void:
 	var art = Pack.new()
 	art.pack_id = pack_id
 	art.animate = false
+	art.printed_crimps = false
 	var canvas = _printed_texture(art, Vector2i(720, 960))
 	_print(pack_root, canvas.get_texture(), Vector2(2.42, 3.42), 0.12)
 	seam = Node3D.new()
 	seam.position = Vector3(0, 1.63, 0.04)
 	pack_root.add_child(seam)
-	_box(seam, Vector3(2.4, 0.16, 0.12), Vector3.ZERO, _foil(tint))
+	var crimp_material = _foil(tint)
+	var ridge_material = _solid(tint.lerp(U.TEXT, 0.55), 0.6)
 	for i in range(24):
-		_box(seam, Vector3(0.025, 0.14, 0.025), Vector3(-1.14 + i * 0.1, 0, 0.08), _solid(tint.lerp(U.TEXT, 0.55), 0.6))
+		var segment = Node3D.new()
+		segment.position.x = -1.15 + i * 0.1
+		seam.add_child(segment)
+		seam_segments.append(segment)
+		_box(segment, Vector3(0.1, 0.16, 0.12), Vector3.ZERO, crimp_material)
+		_box(segment, Vector3(0.025, 0.14, 0.025), Vector3(0, 0, 0.08), ridge_material)
+	rip_line = _box(pack_root, Vector3(1, 0.018, 0.02), Vector3(-1.2, 1.54, 0.19), _solid(tint.lerp(U.TEXT, 0.6), 0.0, true))
+	rip_line.visible = false
 	_box(pack_root, Vector3(2.38, 0.12, 0.1), Vector3(0, -1.72, 0), _foil(tint))
 	_box(world, Vector3(3.6, 0.10, 1.3), Vector3(0, -1.93, -0.1), _solid(Color("221635"), 0.6))
 	_box(world, Vector3(3.58, 0.018, 0.035), Vector3(0, -1.87, 0.56), _solid(tint.darkened(0.35), 0.0, true))
@@ -301,6 +326,10 @@ func _process(delta: float) -> void:
 			viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		return
 	clock += delta
+	if explosion_age >= 0:
+		explosion_age += delta
+	if flip_age >= 0:
+		flip_age += delta
 	if is_instance_valid(rig) and not reduced_motion:
 		rig.rotation.y = lerp_angle(rig.rotation.y, cursor.x * 0.12, minf(1.0, delta * 7))
 		rig.rotation.x = lerp_angle(rig.rotation.x, cursor.y * 0.055, minf(1.0, delta * 7))
@@ -311,17 +340,25 @@ func _process(delta: float) -> void:
 		viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if phase != "idle" or not reduced_motion or static_frames > 0 else SubViewport.UPDATE_DISABLED
 		static_frames = maxi(0, static_frames - 1)
 		for material in foil_materials:
-			material.set_shader_parameter("energy", charge + burst)
+			material.set_shader_parameter("energy", (charge + burst) * (1.0 + flair * 0.3))
 			material.set_shader_parameter("phase", foil_phase + (0.0 if reduced_motion else clock * 0.15))
 		for material in printed_materials:
 			material.set_shader_parameter("phase", rig.rotation.y * 3 + (0.0 if reduced_motion else clock * 0.22))
-		light.light_energy = 2.0 + charge * 3.0 + burst * 2.5
+		light.light_energy = 2.0 + charge * (3.0 + flair) + burst * (3.0 + flair)
+		_update_tear()
+		if is_instance_valid(effects):
+			var tip = Vector3(-1.2 + tear_progress * 2.4, 1.6, 0.2)
+			tip = world.to_local(pack_root.to_global(tip))
+			effects.update_fx({"step": opening_step, "charge": charge, "tear": tear_progress,
+				"explosion_age": explosion_age, "pulse": burst, "clock": clock, "tip": tip,
+				"flip_age": flip_age, "flip_origin": flip_origin, "flip_color": flip_color, "reduced": reduced_motion})
 		for i in range(shards.size()):
 			var fragment = shards[i]
 			fragment.visible = (charge + burst > 0.05) and not reduced_motion
 			var angle = i * TAU / shards.size() + clock * (0.7 + flair * 0.15)
-			var radius = 1.8 + burst * 1.5 + (i % 3) * 0.13
-			fragment.position = Vector3(cos(angle) * radius, sin(angle) * (1.2 + burst), 0.4 + sin(angle * 2) * 0.4)
+			var outward = maxf(0, explosion_age)
+			var radius = 1.8 + outward * 5.0 + (i % 3) * 0.13
+			fragment.position = Vector3(cos(angle) * radius, sin(angle) * (1.2 + outward * 3) - outward * outward, 0.4 + sin(angle * 2) * 0.4)
 			fragment.rotation.z = angle - PI * 0.25
 			fragment.scale.y = 0.5 + charge + burst
 	queue_redraw()
@@ -348,33 +385,78 @@ func play_open() -> void:
 		return
 	phase = "opening"
 	last_animation = "open"
-	_play_sound("pack_tear" if flair == 0 or reduced_motion else "elite_charge")
 	if reduced_motion:
+		_play_sound("card_reveal")
 		_finish_animation()
 		return
+	_set_opening_step("charging")
+	if flair > 0:
+		_play_sound("elite_charge")
 	active_tween = create_tween()
-	var anticipation = 0.16 + flair * 0.23
-	active_tween.tween_property(self, "charge", 1.0, anticipation).set_trans(Tween.TRANS_CUBIC)
+	var anticipation = 0.4 + flair * 0.2
+	active_tween.tween_property(self, "charge", 0.6, anticipation).set_trans(Tween.TRANS_SINE)
 	if is_instance_valid(pack_root):
-		active_tween.parallel().tween_property(pack_root, "rotation_degrees:y", 9.0 + flair * 8.0, anticipation)
-		active_tween.tween_property(seam, "position", Vector3(0.75, 2.22, 0.65), 0.28).set_trans(Tween.TRANS_CUBIC)
-		active_tween.parallel().tween_property(seam, "rotation_degrees:z", -28.0, 0.28)
-		active_tween.tween_callback(func():
-			for i in range(card_roots.size()):
-				card_roots[i].visible = true
-				card_roots[i].scale = Vector3.ONE * 0.6
-				card_roots[i].position = Vector3(0, 0.25, -0.4 - i * 0.01))
-		active_tween.tween_property(pack_root, "position", Vector3(0, -3.5, -1), 0.4)
-		active_tween.parallel().tween_property(pack_root, "scale", Vector3.ONE * 0.7, 0.4)
-		active_tween.parallel().tween_property(camera, "size", _fan_camera_size(), 0.5)
+		active_tween.parallel().tween_property(pack_root, "rotation_degrees:y", 4.0 + flair * 5.0, anticipation)
+	active_tween.tween_callback(_begin_tear)
+	var tear_duration = 1.35 + flair * 0.35
+	active_tween.tween_property(self, "tear_progress", 1.0, tear_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	active_tween.parallel().tween_property(self, "charge", 1.0, tear_duration)
+	active_tween.tween_callback(_ignite_burst)
+	active_tween.tween_property(self, "burst", 1.0 + flair * 0.2, 0.12)
+	if is_instance_valid(pack_root):
+		active_tween.parallel().tween_property(seam, "position", Vector3(0.8, 2.3, 0.6), 0.12)
+		active_tween.parallel().tween_property(pack_root, "scale", Vector3.ONE * 1.06, 0.12)
+	active_tween.tween_callback(_start_fan)
+	var fan_duration = 0.58 + flair * 0.08
+	if is_instance_valid(pack_root):
+		active_tween.tween_property(pack_root, "position", Vector3(0, -4.2, -1.3), fan_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		active_tween.parallel().tween_property(pack_root, "rotation_degrees:z", 32.0, fan_duration)
+		active_tween.parallel().tween_property(seam, "position", Vector3(2.2, 4.3, 1.2), fan_duration)
+		active_tween.parallel().tween_property(seam, "rotation_degrees:z", -65.0, fan_duration)
+		active_tween.parallel().tween_property(camera, "size", _fan_camera_size(), fan_duration)
 		for i in range(card_roots.size()):
-			active_tween.parallel().tween_property(card_roots[i], "position", _fan_position(i), 0.48).set_delay(i * 0.025).set_trans(Tween.TRANS_BACK)
-			active_tween.parallel().tween_property(card_roots[i], "scale", Vector3.ONE, 0.48).set_delay(i * 0.025)
-			active_tween.parallel().tween_property(card_roots[i], "rotation_degrees:z", _fan_roll(i), 0.48)
+			active_tween.parallel().tween_property(card_roots[i], "position", _fan_position(i), fan_duration).set_delay(i * 0.025).set_trans(Tween.TRANS_BACK)
+			active_tween.parallel().tween_property(card_roots[i], "scale", Vector3.ONE, fan_duration).set_delay(i * 0.025)
+			active_tween.parallel().tween_property(card_roots[i], "rotation_degrees:z", _fan_roll(i), fan_duration)
 	else:
-		active_tween.tween_interval(0.78)
-	active_tween.tween_property(self, "charge", 0.0, 0.18 + flair * 0.06)
+		active_tween.tween_interval(fan_duration + 0.1)
+	active_tween.parallel().tween_property(self, "burst", 0.0, fan_duration + 0.1)
+	active_tween.parallel().tween_property(self, "charge", 0.0, fan_duration + 0.1)
+	active_tween.tween_interval(0.25 + flair * 0.06)
 	active_tween.tween_callback(_finish_animation)
+
+func _set_opening_step(step: String) -> void:
+	opening_step = step
+	opening_step_changed.emit(step)
+
+func _begin_tear() -> void:
+	_set_opening_step("tearing")
+	_play_sound("pack_tear", 2.05 / (1.35 + flair * 0.35))
+
+func _update_tear() -> void:
+	if opening_step != "tearing" and opening_step != "bursting":
+		if is_instance_valid(rip_line):
+			rip_line.visible = false
+		return
+	for i in range(seam_segments.size()):
+		var peeled = clampf((tear_progress * 24 - i) * 0.4, 0.0, 1.0)
+		seam_segments[i].position = Vector3(-1.15 + i * 0.1, peeled * (0.23 + 0.15 * sin(i * 0.18)), peeled * 0.22)
+		seam_segments[i].rotation_degrees.z = -peeled * 15
+	rip_line.visible = tear_progress > 0.01
+	rip_line.scale.x = maxf(0.01, tear_progress * 2.4)
+	rip_line.position.x = -1.2 + tear_progress * 1.2
+
+func _ignite_burst() -> void:
+	_set_opening_step("bursting")
+	explosion_age = 0.0
+	_play_sound("elite_burst" if flair > 0 else "pack_burst")
+
+func _start_fan() -> void:
+	_set_opening_step("fanning")
+	for i in range(card_roots.size()):
+		card_roots[i].visible = true
+		card_roots[i].scale = Vector3.ONE * 0.28
+		card_roots[i].position = Vector3(0, 0.35, -0.4 - i * 0.01)
 
 func reveal_to(target: int) -> void:
 	if phase != "idle":
@@ -389,6 +471,7 @@ func reveal_to(target: int) -> void:
 	active_tween = create_tween()
 	for i in range(revealed, pending_target):
 		var rarity = int(C.card(cards[i]).rarity)
+		active_tween.tween_callback(_card_flare.bind(i))
 		active_tween.tween_callback(_play_sound.bind("card_reveal", 0.95 + rarity * 0.06))
 		var duration = 0.28 + rarity * 0.08 + flair * 0.045
 		active_tween.tween_property(self, "burst", 0.22 + rarity * 0.2 + flair * 0.12, 0.08)
@@ -401,6 +484,11 @@ func reveal_to(target: int) -> void:
 			active_tween.tween_interval(duration)
 		active_tween.tween_property(self, "burst", 0.0, 0.1)
 	active_tween.tween_callback(_finish_animation)
+
+func _card_flare(index: int) -> void:
+	flip_age = 0.0
+	flip_origin = _fan_position(index)
+	flip_color = C.COLORS[C.card(cards[index]).rarity]
 
 func _fan_position(index: int) -> Vector3:
 	return Vector3((index - (cards.size() - 1) * 0.5) * 1.68, -0.08, 0.0)
@@ -443,6 +531,12 @@ func _finish_animation() -> void:
 	phase = "idle"
 	charge = 0.0
 	burst = 0.0
+	tear_progress = 0.0
+	explosion_age = -1.0
+	flip_age = -1.0
+	_set_opening_step("idle")
+	if is_instance_valid(effects):
+		effects.visible = false
 	_refresh_fallback()
 	animation_finished.emit(completed)
 
@@ -470,10 +564,13 @@ func set_3d_enabled(value: bool) -> void:
 	rig = null
 	pack_root = null
 	seam = null
+	effects = null
+	rip_line = null
 	camera = null
 	fallback = null
 	audio = null
 	card_roots.clear()
+	seam_segments.clear()
 	shards.clear()
 	foil_materials.clear()
 	printed_materials.clear()

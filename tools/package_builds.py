@@ -24,7 +24,7 @@ def package(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     version = subprocess.check_output(["godot", "--version"], text=True).strip()
     info = (
-        "CSTCG / Club Circuit — alpha 0.4 / Phase Shift\n"
+        "CSTCG / Club Circuit — alpha 0.4.1 / slow tear and burst effects\n"
         f"Source commit: {commit}\n"
         f"Engine: {version}\n"
         f"Packaged (UTC): {datetime.now(timezone.utc).isoformat()}\n"

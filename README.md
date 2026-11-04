@@ -6,7 +6,7 @@ For portable builds and a short test walkthrough, see [TESTING.md](TESTING.md). 
 
 **Open packs → build a five-player lineup → choose tactics → play the circuit → earn your next signing.**
 
-Alpha 0.4 adds the **Phase Shift** blue/red/violet identity, real 3D foil pack openings, stronger Elite effects, card comparison, original pack sounds and lightweight/reduced-motion options. See [the current build notes](docs/ALPHA_0_4.md). The [earlier menu update](docs/UI_PASS_0_3.md) and [Dust II match rules](docs/ALPHA_0_2.md) remain documented.
+Alpha 0.4.1 adds a **slow progressive tear, glowing seam, spark showers and an explosive card fan**, with a longer buildup and richer effects for Elite. See [the current effects notes](docs/OPENING_EFFECTS_0_4_1.md). The [Phase Shift update](docs/ALPHA_0_4.md), [earlier menus](docs/UI_PASS_0_3.md) and [Dust II match rules](docs/ALPHA_0_2.md) remain documented.
 
 The next launch collection is specified in the [CSTCG Series 1 design kit](docs/series_1/DESIGN_SPEC.md): Alpha, Bravo, Elite and Beta Event, each with a 50-card pool. Browse the [interactive 90-card catalogue](docs/series_1/index.html) or the [printable lookbook](docs/series_1/CSTCG_Series_1_Design_Lookbook.pdf). These are content/art specifications; the playable alpha catalogue is unchanged.
 
