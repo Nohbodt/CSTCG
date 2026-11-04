@@ -1,0 +1,17 @@
+﻿pack,slot,finish_filter,Common_percent,Uncommon_percent,Semi-Rare_percent,Rare_percent,Legendary_percent,Peak_percent
+CSTCG Series 1 Alpha,1,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Alpha,2,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Alpha,3,any eligible,0.0,0.0,0.0,95.0,4.9,0.1
+CSTCG Series 1 Bravo,1,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Bravo,2,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Bravo,3,any eligible,0.0,0.0,0.0,95.0,4.9,0.1
+CSTCG Series 1 Elite,1,any eligible,0.0,25.0,40.0,30.0,4.9,0.1
+CSTCG Series 1 Elite,2,any eligible,0.0,25.0,40.0,30.0,4.9,0.1
+CSTCG Series 1 Elite,3,any eligible,0.0,25.0,40.0,30.0,4.9,0.1
+CSTCG Series 1 Elite,4,any eligible,0.0,25.0,40.0,30.0,4.9,0.1
+CSTCG Series 1 Elite,5,showcase,0.0,0.0,0.0,0.0,99.9,0.1
+CSTCG Series 1 Beta Event,1,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Beta Event,2,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Beta Event,3,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Beta Event,4,any eligible,45.0,30.0,18.0,6.5,0.45,0.05
+CSTCG Series 1 Beta Event,5,beta_event,0.0,0.0,0.0,95.0,4.9,0.1

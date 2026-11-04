@@ -8,6 +8,8 @@ For portable builds and a short test walkthrough, see [TESTING.md](TESTING.md). 
 
 Alpha 0.2 adds a pre-match choice, full 3D Dust II matches, half-reward quick results, real player identities, and saved match resume. See [the current build notes](docs/ALPHA_0_2.md).
 
+The next launch collection is specified in the [CSTCG Series 1 design kit](docs/series_1/DESIGN_SPEC.md): Alpha, Bravo, Elite and Beta Event, each with a 50-card pool. Browse the [interactive 90-card catalogue](docs/series_1/index.html) or the [printable lookbook](docs/series_1/CSTCG_Series_1_Design_Lookbook.pdf). These are content/art specifications; the playable alpha catalogue is unchanged.
+
 ![The pack room](docs/screenshots/pack-room.png)
 
 ## Play

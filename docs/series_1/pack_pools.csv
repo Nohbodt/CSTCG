@@ -1,0 +1,201 @@
+﻿pack,card_id,number,player,role,rarity,finish,at_least_one_per_opening_percent,expected_copies_per_opening
+CSTCG Series 1 Alpha,s1.base.yekindar,S1-001/090,YEKINDAR,ENTRY,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.rain,S1-002/090,rain,ENTRY,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.patsi,S1-003/090,Patsi,ENTRY,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.brollan,S1-005/090,Brollan,ENTRY,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Alpha,s1.base.xantares,S1-007/090,XANTARES,ENTRY,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.elige,S1-008/090,EliGE,ENTRY,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.flamez,S1-009/090,flameZ,ENTRY,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.xertion,S1-010/090,xertioN,ENTRY,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.donk,S1-011/090,donk,ENTRY,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Alpha,s1.base.niko,S1-012/090,NiKo,ENTRY,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Alpha,s1.base.syrson,S1-013/090,syrsoN,AWPER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.smooya,S1-014/090,smooya,AWPER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.hades,S1-015/090,hades,AWPER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.broky,S1-017/090,broky,AWPER,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Alpha,s1.base.m0nesy,S1-019/090,m0NESY,AWPER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.wonderful,S1-020/090,w0nderful,AWPER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.sh1ro,S1-021/090,sh1ro,AWPER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.device,S1-022/090,device,AWPER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.zywoo,S1-023/090,ZywOo,AWPER,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Alpha,s1.base.s1mple,S1-024/090,s1mple,AWPER,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Alpha,s1.base.gla1ve,S1-025/090,gla1ve,IGL,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.alex,S1-026/090,ALEX,IGL,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.dexter,S1-027/090,dexter,IGL,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.siuhy,S1-029/090,siuhy,IGL,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Alpha,s1.base.karrigan,S1-031/090,karrigan,IGL,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.tabsen,S1-032/090,tabseN,IGL,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.aleksib,S1-033/090,Aleksib,IGL,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.jame,S1-034/090,Jame,IGL,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.apex,S1-035/090,apEX,IGL,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Alpha,s1.base.fallen,S1-036/090,FalleN,IGL,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Alpha,s1.base.rush,S1-037/090,RUSH,SUPPORT,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.interz,S1-038/090,interz,SUPPORT,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.styko,S1-039/090,STYKO,SUPPORT,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.perfecto,S1-041/090,Perfecto,SUPPORT,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Alpha,s1.base.xyp9x,S1-043/090,Xyp9x,SUPPORT,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.sjuush,S1-044/090,sjuush,SUPPORT,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.krimz,S1-045/090,KRIMZ,SUPPORT,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.naf,S1-046/090,NAF,SUPPORT,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.magisk,S1-047/090,Magisk,SUPPORT,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Alpha,s1.base.twistzz,S1-048/090,Twistzz,SUPPORT,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Alpha,s1.base.jks,S1-049/090,jks,LURKER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.f1ku,S1-050/090,F1KU,LURKER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.faven,S1-051/090,faveN,LURKER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Alpha,s1.base.nertz,S1-053/090,NertZ,LURKER,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Alpha,s1.base.ropz,S1-055/090,ropz,LURKER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.frozen,S1-056/090,frozen,LURKER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Alpha,s1.base.kscerato,S1-057/090,KSCERATO,LURKER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.ax1le,S1-058/090,Ax1Le,LURKER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Alpha,s1.base.spinx,S1-059/090,Spinx,LURKER,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Alpha,s1.base.get_right,S1-060/090,GeT_RiGhT,LURKER,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Bravo,s1.base.yekindar,S1-001/090,YEKINDAR,ENTRY,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.rain,S1-002/090,rain,ENTRY,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.boros,S1-004/090,BOROS,ENTRY,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.im,S1-006/090,iM,ENTRY,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Bravo,s1.base.xantares,S1-007/090,XANTARES,ENTRY,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.elige,S1-008/090,EliGE,ENTRY,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.flamez,S1-009/090,flameZ,ENTRY,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.xertion,S1-010/090,xertioN,ENTRY,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.donk,S1-011/090,donk,ENTRY,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Bravo,s1.base.niko,S1-012/090,NiKo,ENTRY,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Bravo,s1.base.syrson,S1-013/090,syrsoN,AWPER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.smooya,S1-014/090,smooya,AWPER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.degster,S1-016/090,degster,AWPER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.torzsi,S1-018/090,torzsi,AWPER,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Bravo,s1.base.m0nesy,S1-019/090,m0NESY,AWPER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.wonderful,S1-020/090,w0nderful,AWPER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.sh1ro,S1-021/090,sh1ro,AWPER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.device,S1-022/090,device,AWPER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.zywoo,S1-023/090,ZywOo,AWPER,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Bravo,s1.base.s1mple,S1-024/090,s1mple,AWPER,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Bravo,s1.base.gla1ve,S1-025/090,gla1ve,IGL,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.alex,S1-026/090,ALEX,IGL,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.snappi,S1-028/090,Snappi,IGL,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.chopper,S1-030/090,chopper,IGL,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Bravo,s1.base.karrigan,S1-031/090,karrigan,IGL,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.tabsen,S1-032/090,tabseN,IGL,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.aleksib,S1-033/090,Aleksib,IGL,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.jame,S1-034/090,Jame,IGL,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.apex,S1-035/090,apEX,IGL,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Bravo,s1.base.fallen,S1-036/090,FalleN,IGL,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Bravo,s1.base.rush,S1-037/090,RUSH,SUPPORT,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.interz,S1-038/090,interz,SUPPORT,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.es3tag,S1-040/090,es3tag,SUPPORT,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.amanek,S1-042/090,AMANEK,SUPPORT,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Bravo,s1.base.xyp9x,S1-043/090,Xyp9x,SUPPORT,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.sjuush,S1-044/090,sjuush,SUPPORT,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.krimz,S1-045/090,KRIMZ,SUPPORT,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.naf,S1-046/090,NAF,SUPPORT,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.magisk,S1-047/090,Magisk,SUPPORT,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Bravo,s1.base.twistzz,S1-048/090,Twistzz,SUPPORT,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Bravo,s1.base.jks,S1-049/090,jks,LURKER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.f1ku,S1-050/090,F1KU,LURKER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.dycha,S1-052/090,dycha,LURKER,Common,base,5.91000000,0.06000000
+CSTCG Series 1 Bravo,s1.base.blamef,S1-054/090,blameF,LURKER,Uncommon,base,11.64000000,0.12000000
+CSTCG Series 1 Bravo,s1.base.ropz,S1-055/090,ropz,LURKER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.frozen,S1-056/090,frozen,LURKER,Semi-Rare,base,3.56760000,0.03600000
+CSTCG Series 1 Bravo,s1.base.kscerato,S1-057/090,KSCERATO,LURKER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.ax1le,S1-058/090,Ax1Le,LURKER,Rare,base,10.67267637,0.10800000
+CSTCG Series 1 Bravo,s1.base.spinx,S1-059/090,Spinx,LURKER,Legendary,base,1.15815579,0.01160000
+CSTCG Series 1 Bravo,s1.base.get_right,S1-060/090,GeT_RiGhT,LURKER,Peak,base,0.03999500,0.00040000
+CSTCG Series 1 Elite,s1.base.brollan,S1-005/090,Brollan,ENTRY,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.im,S1-006/090,iM,ENTRY,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.xantares,S1-007/090,XANTARES,ENTRY,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.elige,S1-008/090,EliGE,ENTRY,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.flamez,S1-009/090,flameZ,ENTRY,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.xertion,S1-010/090,xertioN,ENTRY,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.donk,S1-011/090,donk,ENTRY,Legendary,base,1.94564100,0.01960000
+CSTCG Series 1 Elite,s1.base.niko,S1-012/090,NiKo,ENTRY,Peak,base,0.03999400,0.00040000
+CSTCG Series 1 Elite,s1.base.broky,S1-017/090,broky,AWPER,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.torzsi,S1-018/090,torzsi,AWPER,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.m0nesy,S1-019/090,m0NESY,AWPER,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.wonderful,S1-020/090,w0nderful,AWPER,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.sh1ro,S1-021/090,sh1ro,AWPER,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.device,S1-022/090,device,AWPER,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.zywoo,S1-023/090,ZywOo,AWPER,Legendary,base,1.94564100,0.01960000
+CSTCG Series 1 Elite,s1.base.s1mple,S1-024/090,s1mple,AWPER,Peak,base,0.03999400,0.00040000
+CSTCG Series 1 Elite,s1.base.siuhy,S1-029/090,siuhy,IGL,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.chopper,S1-030/090,chopper,IGL,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.karrigan,S1-031/090,karrigan,IGL,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.tabsen,S1-032/090,tabseN,IGL,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.aleksib,S1-033/090,Aleksib,IGL,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.jame,S1-034/090,Jame,IGL,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.apex,S1-035/090,apEX,IGL,Legendary,base,1.94564100,0.01960000
+CSTCG Series 1 Elite,s1.base.fallen,S1-036/090,FalleN,IGL,Peak,base,0.03999400,0.00040000
+CSTCG Series 1 Elite,s1.base.perfecto,S1-041/090,Perfecto,SUPPORT,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.amanek,S1-042/090,AMANEK,SUPPORT,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.xyp9x,S1-043/090,Xyp9x,SUPPORT,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.sjuush,S1-044/090,sjuush,SUPPORT,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.krimz,S1-045/090,KRIMZ,SUPPORT,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.naf,S1-046/090,NAF,SUPPORT,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.magisk,S1-047/090,Magisk,SUPPORT,Legendary,base,1.94564100,0.01960000
+CSTCG Series 1 Elite,s1.base.twistzz,S1-048/090,Twistzz,SUPPORT,Peak,base,0.03999400,0.00040000
+CSTCG Series 1 Elite,s1.base.nertz,S1-053/090,NertZ,LURKER,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.blamef,S1-054/090,blameF,LURKER,Uncommon,base,9.63121094,0.10000000
+CSTCG Series 1 Elite,s1.base.ropz,S1-055/090,ropz,LURKER,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.frozen,S1-056/090,frozen,LURKER,Semi-Rare,base,15.06534400,0.16000000
+CSTCG Series 1 Elite,s1.base.kscerato,S1-057/090,KSCERATO,LURKER,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.ax1le,S1-058/090,Ax1Le,LURKER,Rare,base,11.47071900,0.12000000
+CSTCG Series 1 Elite,s1.base.spinx,S1-059/090,Spinx,LURKER,Legendary,base,1.94564100,0.01960000
+CSTCG Series 1 Elite,s1.base.get_right,S1-060/090,GeT_RiGhT,LURKER,Peak,base,0.03999400,0.00040000
+CSTCG Series 1 Elite,s1.showcase.donk,S1-061/090,donk,ENTRY,Legendary,showcase,21.53690193,0.21940000
+CSTCG Series 1 Elite,s1.showcase.niko,S1-062/090,NiKo,ENTRY,Peak,showcase,0.05998600,0.00060000
+CSTCG Series 1 Elite,s1.showcase.zywoo,S1-063/090,ZywOo,AWPER,Legendary,showcase,21.53690193,0.21940000
+CSTCG Series 1 Elite,s1.showcase.s1mple,S1-064/090,s1mple,AWPER,Peak,showcase,0.05998600,0.00060000
+CSTCG Series 1 Elite,s1.showcase.apex,S1-065/090,apEX,IGL,Legendary,showcase,21.53690193,0.21940000
+CSTCG Series 1 Elite,s1.showcase.fallen,S1-066/090,FalleN,IGL,Peak,showcase,0.05998600,0.00060000
+CSTCG Series 1 Elite,s1.showcase.magisk,S1-067/090,Magisk,SUPPORT,Legendary,showcase,21.53690193,0.21940000
+CSTCG Series 1 Elite,s1.showcase.twistzz,S1-068/090,Twistzz,SUPPORT,Peak,showcase,0.05998600,0.00060000
+CSTCG Series 1 Elite,s1.showcase.spinx,S1-069/090,Spinx,LURKER,Legendary,showcase,21.53690193,0.21940000
+CSTCG Series 1 Elite,s1.showcase.get_right,S1-070/090,GeT_RiGhT,LURKER,Peak,showcase,0.05998600,0.00060000
+CSTCG Series 1 Beta Event,s1.base.yekindar,S1-001/090,YEKINDAR,ENTRY,Common,base,31.42503900,0.36000000
+CSTCG Series 1 Beta Event,s1.base.brollan,S1-005/090,Brollan,ENTRY,Uncommon,base,21.92510400,0.24000000
+CSTCG Series 1 Beta Event,s1.base.xantares,S1-007/090,XANTARES,ENTRY,Semi-Rare,base,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.base.flamez,S1-009/090,flameZ,ENTRY,Rare,base,2.57475967,0.02600000
+CSTCG Series 1 Beta Event,s1.base.donk,S1-011/090,donk,ENTRY,Legendary,base,0.17987854,0.00180000
+CSTCG Series 1 Beta Event,s1.base.niko,S1-012/090,NiKo,ENTRY,Peak,base,0.01999850,0.00020000
+CSTCG Series 1 Beta Event,s1.base.syrson,S1-013/090,syrsoN,AWPER,Common,base,31.42503900,0.36000000
+CSTCG Series 1 Beta Event,s1.base.torzsi,S1-018/090,torzsi,AWPER,Uncommon,base,21.92510400,0.24000000
+CSTCG Series 1 Beta Event,s1.base.wonderful,S1-020/090,w0nderful,AWPER,Semi-Rare,base,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.base.device,S1-022/090,device,AWPER,Rare,base,2.57475967,0.02600000
+CSTCG Series 1 Beta Event,s1.base.zywoo,S1-023/090,ZywOo,AWPER,Legendary,base,0.17987854,0.00180000
+CSTCG Series 1 Beta Event,s1.base.s1mple,S1-024/090,s1mple,AWPER,Peak,base,0.01999850,0.00020000
+CSTCG Series 1 Beta Event,s1.base.gla1ve,S1-025/090,gla1ve,IGL,Common,base,31.42503900,0.36000000
+CSTCG Series 1 Beta Event,s1.base.siuhy,S1-029/090,siuhy,IGL,Uncommon,base,21.92510400,0.24000000
+CSTCG Series 1 Beta Event,s1.base.karrigan,S1-031/090,karrigan,IGL,Semi-Rare,base,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.base.aleksib,S1-033/090,Aleksib,IGL,Rare,base,2.57475967,0.02600000
+CSTCG Series 1 Beta Event,s1.base.apex,S1-035/090,apEX,IGL,Legendary,base,0.17987854,0.00180000
+CSTCG Series 1 Beta Event,s1.base.fallen,S1-036/090,FalleN,IGL,Peak,base,0.01999850,0.00020000
+CSTCG Series 1 Beta Event,s1.base.rush,S1-037/090,RUSH,SUPPORT,Common,base,31.42503900,0.36000000
+CSTCG Series 1 Beta Event,s1.base.amanek,S1-042/090,AMANEK,SUPPORT,Uncommon,base,21.92510400,0.24000000
+CSTCG Series 1 Beta Event,s1.base.sjuush,S1-044/090,sjuush,SUPPORT,Semi-Rare,base,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.base.naf,S1-046/090,NAF,SUPPORT,Rare,base,2.57475967,0.02600000
+CSTCG Series 1 Beta Event,s1.base.magisk,S1-047/090,Magisk,SUPPORT,Legendary,base,0.17987854,0.00180000
+CSTCG Series 1 Beta Event,s1.base.twistzz,S1-048/090,Twistzz,SUPPORT,Peak,base,0.01999850,0.00020000
+CSTCG Series 1 Beta Event,s1.base.jks,S1-049/090,jks,LURKER,Common,base,31.42503900,0.36000000
+CSTCG Series 1 Beta Event,s1.base.nertz,S1-053/090,NertZ,LURKER,Uncommon,base,21.92510400,0.24000000
+CSTCG Series 1 Beta Event,s1.base.ropz,S1-055/090,ropz,LURKER,Semi-Rare,base,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.base.kscerato,S1-057/090,KSCERATO,LURKER,Rare,base,2.57475967,0.02600000
+CSTCG Series 1 Beta Event,s1.base.spinx,S1-059/090,Spinx,LURKER,Legendary,base,0.17987854,0.00180000
+CSTCG Series 1 Beta Event,s1.base.get_right,S1-060/090,GeT_RiGhT,LURKER,Peak,base,0.01999850,0.00020000
+CSTCG Series 1 Beta Event,s1.beta_event.xantares,S1-071/090,XANTARES,ENTRY,Semi-Rare,beta_event,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.beta_event.flamez,S1-072/090,flameZ,ENTRY,Rare,beta_event,21.08555533,0.21600000
+CSTCG Series 1 Beta Event,s1.beta_event.donk,S1-073/090,donk,ENTRY,Legendary,beta_event,1.15811573,0.01160000
+CSTCG Series 1 Beta Event,s1.beta_event.niko,S1-074/090,NiKo,ENTRY,Peak,beta_event,0.03999450,0.00040000
+CSTCG Series 1 Beta Event,s1.beta_event.m0nesy,S1-075/090,m0NESY,AWPER,Semi-Rare,beta_event,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.beta_event.sh1ro,S1-076/090,sh1ro,AWPER,Rare,beta_event,21.08555533,0.21600000
+CSTCG Series 1 Beta Event,s1.beta_event.zywoo,S1-077/090,ZywOo,AWPER,Legendary,beta_event,1.15811573,0.01160000
+CSTCG Series 1 Beta Event,s1.beta_event.s1mple,S1-078/090,s1mple,AWPER,Peak,beta_event,0.03999450,0.00040000
+CSTCG Series 1 Beta Event,s1.beta_event.karrigan,S1-079/090,karrigan,IGL,Semi-Rare,beta_event,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.beta_event.aleksib,S1-080/090,Aleksib,IGL,Rare,beta_event,21.08555533,0.21600000
+CSTCG Series 1 Beta Event,s1.beta_event.apex,S1-081/090,apEX,IGL,Legendary,beta_event,1.15811573,0.01160000
+CSTCG Series 1 Beta Event,s1.beta_event.fallen,S1-082/090,FalleN,IGL,Peak,beta_event,0.03999450,0.00040000
+CSTCG Series 1 Beta Event,s1.beta_event.xyp9x,S1-083/090,Xyp9x,SUPPORT,Semi-Rare,beta_event,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.beta_event.krimz,S1-084/090,KRIMZ,SUPPORT,Rare,beta_event,21.08555533,0.21600000
+CSTCG Series 1 Beta Event,s1.beta_event.magisk,S1-085/090,Magisk,SUPPORT,Legendary,beta_event,1.15811573,0.01160000
+CSTCG Series 1 Beta Event,s1.beta_event.twistzz,S1-086/090,Twistzz,SUPPORT,Peak,beta_event,0.03999450,0.00040000
+CSTCG Series 1 Beta Event,s1.beta_event.ropz,S1-087/090,ropz,LURKER,Semi-Rare,beta_event,7.00792230,0.07200000
+CSTCG Series 1 Beta Event,s1.beta_event.kscerato,S1-088/090,KSCERATO,LURKER,Rare,beta_event,21.08555533,0.21600000
+CSTCG Series 1 Beta Event,s1.beta_event.spinx,S1-089/090,Spinx,LURKER,Legendary,beta_event,1.15811573,0.01160000
+CSTCG Series 1 Beta Event,s1.beta_event.get_right,S1-090/090,GeT_RiGhT,LURKER,Peak,beta_event,0.03999450,0.00040000

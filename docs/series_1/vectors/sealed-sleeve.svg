@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 1200" role="img" aria-label="Uniform concealed CSTCG Series 1 sleeve">
+<rect x="3" y="3" width="834" height="1194" rx="30" fill="#101720" stroke="#687884" stroke-width="6"/>
+<rect x="35" y="35" width="770" height="1130" rx="16" fill="none" stroke="#364450" stroke-width="2"/>
+<path d="M70 1010L770 190M70 1090L770 270M70 930L770 110" stroke="#243441" stroke-width="3"/>
+<circle cx="420" cy="510" r="182" fill="#14202A" stroke="#526676" stroke-width="3"/>
+<text x="420" y="535" text-anchor="middle" fill="#E8E9E1" font-family="DejaVu Sans Condensed, sans-serif" font-weight="bold" font-size="81">CSTCG</text>
+<text x="420" y="620" text-anchor="middle" fill="#91A1AD" font-family="sans-serif" font-size="31" letter-spacing="7">SERIES 1</text>
+<path d="M175 864H665" stroke="#4D6273"/>
+<text x="420" y="925" text-anchor="middle" fill="#B6C3CB" font-family="sans-serif" font-size="31">YOUR NEXT POSSIBILITY</text>
+<text x="420" y="1100" text-anchor="middle" fill="#7D8E9C" font-family="sans-serif" font-size="20" letter-spacing="3">THE CLUB STARTS WITH THE CARDS</text></svg>
