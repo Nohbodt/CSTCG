@@ -147,6 +147,59 @@ func has_sight(start: Vector3, finish: Vector3) -> bool:
 func floor_at(point: Vector3, above: float = 0.5, below: float = 1.0) -> Dictionary:
 	return ray(point + Vector3.UP * above, point - Vector3.UP * below)
 
+func supported_feet(point: Vector3) -> Vector3:
+	var hit = floor_at(point)
+	return hit.position + Vector3.UP * 0.04 if not hit.is_empty() else point
+
+func formation(center: Vector3, count: int) -> Array:
+	center = closest(center)
+	var positions: Array = []
+	for ring in range(6):
+		for z in range(-ring, ring + 1):
+			for x in range(-ring, ring + 1):
+				var candidate = center + Vector3(x, 0, z) * 1.1
+				var nearest = closest(candidate)
+				if candidate.distance_to(nearest) > 0.6 or route(center, nearest).is_empty():
+					continue
+				var hit = floor_at(nearest)
+				if hit.is_empty():
+					continue
+				var feet = hit.position + Vector3.UP * 0.04
+				if not body_clear(feet) or positions.any(func(p): return p.distance_to(feet) < 0.95):
+					continue
+				positions.append(feet)
+				if positions.size() == count:
+					return positions
+	return positions
+
+func trace_route(start: Vector3, destination: Vector3) -> Dictionary:
+	# Cacheable physical travel track for a static map. Every sample is checked by
+	# the same support/capsule/sweep contract as the interactive route probes.
+	var path = route(start, destination)
+	if path.is_empty():
+		return {"ok": false, "reason": "No connected route"}
+	var position = start
+	var samples = PackedVector3Array([position])
+	var cumulative = PackedFloat32Array([0.0])
+	var cursor = 0
+	var length = 0.0
+	for _tick in range(18000):
+		while cursor < path.size():
+			var target = path[cursor]
+			if Vector2(target.x - position.x, target.z - position.z).length() > 0.02 or absf(target.y - position.y) > MAX_STEP + 0.25:
+				break
+			cursor += 1
+		if cursor >= path.size():
+			return {"ok": true, "points": samples, "cumulative": cumulative, "length": length}
+		var movement = walk_step(position, path[cursor], 5.0 / 60.0)
+		if not movement.ok:
+			return {"ok": false, "reason": movement.reason}
+		length += position.distance_to(movement.position)
+		position = movement.position
+		samples.append(position)
+		cumulative.append(length)
+	return {"ok": false, "reason": "Physical route exceeded its time bound"}
+
 func body_clear(feet: Vector3, radius: float = RADIUS) -> bool:
 	var capsule = CapsuleShape3D.new()
 	capsule.height = HEIGHT - 0.1

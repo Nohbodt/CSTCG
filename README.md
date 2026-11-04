@@ -6,6 +6,8 @@ For portable builds and a short test walkthrough, see [TESTING.md](TESTING.md). 
 
 **Open packs → build a five-player lineup → choose tactics → play the circuit → earn your next signing.**
 
+Alpha 0.2 adds a pre-match choice, full 3D Dust II matches, half-reward quick results, real player identities, and saved match resume. See [the current build notes](docs/ALPHA_0_2.md).
+
 ![The pack room](docs/screenshots/pack-room.png)
 
 ## Play
@@ -25,20 +27,20 @@ godot --editor --path .
 
 Press **F6/F5** to play the current/main scene, or run `godot --path .` directly. Graphical play requires a desktop display. On your own desktop, import `project.godot` through Godot's project manager; the cloud-specific XDG paths are unnecessary.
 
-You start with a complete lineup, one spare SPARK, **800 credits**, and **two Contender packs**. Start in Pack room, open a pack, then use My squad to add a new player. The in-game **How to play** screen explains the full loop.
+You start with a complete lineup, one spare YEKINDAR, **800 credits**, and **two Contender packs**. Start in Pack room, open a pack, then use My squad to add a new player. The in-game **How to play** screen explains the full loop.
 
 ## Included
 
 - Six connected screens: Overview, My squad, Pack room, Collection, Match room, and Trade desk.
-- Thirty fictional player cards across five roles and four rarities, with illustrated portraits and visible stats.
+- Thirty real public player identities across five assigned roles and four rarities, with custom alpha stats and neutral nameplates.
 - Contender and Elite packs, sealed wrappers, a tear-open transition, sequential reveals, duplicate/NEW labels, guaranteed slots, and published odds.
 - Roster substitutions, collection filters, spare-card releases, and confirmed one-for-one AI trades.
-- MR12 match simulation, MR3 overtime, map/tactic modifiers, equipment budgets, round feed, match history, credits, XP, and milestone packs.
-- Transactional local saves; interrupted pack openings resume with their original contents.
+- A pre-match choice: play an automatic 3D Dust II match for full rewards, or use the quick simulation for half credits/XP. Both support MR12/MR3 overtime, saved reports and milestone packs.
+- Transactional local saves; pack reveals resume with their original contents, and played matches resume from the current round’s start without rerolling it. Earlier clubs migrate with a backup.
 - A reduced-motion switch, mouse and keyboard button navigation, and responsive viewport scaling.
 - A [Dust II 3D map lab](docs/MAP_INTEGRATION.md) using the supplied STL, with navigation, collision-checked movement probes, and eye-height sightline tools. Open it from Match room or run `godot --path . --scene res://scenes/spatial_lab.tscn`.
 
-Read the reconciled [Master GDD v3.0](docs/ESPORTS_CSTCG_Master_GDD_v3_0.md) for the recommended full game: Ultimate Team-style collecting combined with tactical club management. [Merge notes](docs/DESIGN_MERGE_NOTES.md) identify changes to the old design. The [prototype specification](docs/GAME_DESIGN.md) documents the current build's actual rules; the new GDD is a design proposal, not an implemented feature list. [Architecture](docs/ARCHITECTURE.md) explains the existing code.
+Read the reconciled [Master GDD v3.0](docs/ESPORTS_CSTCG_Master_GDD_v3_0.md) for the recommended full game: Ultimate Team-style collecting combined with tactical club management. [Merge notes](docs/DESIGN_MERGE_NOTES.md) identify changes to the old design. The [alpha 0.2 notes](docs/ALPHA_0_2.md) document the current match rules and real-player roster. The [older prototype specification](docs/GAME_DESIGN.md) is historical; the master GDD is a design proposal, not an implemented feature list. [Architecture](docs/ARCHITECTURE.md) explains the existing code.
 
 The master is also available as a [PDF](docs/ESPORTS_CSTCG_Master_GDD_v3_0.pdf) and an [editable Word document](docs/ESPORTS_CSTCG_Master_GDD_v3_0.docx). Run `python3 tools/export_gdd.py` to regenerate these from Markdown in a document-authoring environment with `reportlab` and `python-docx`; these packages are not game dependencies.
 
@@ -48,7 +50,7 @@ The master is also available as a [PDF](docs/ESPORTS_CSTCG_Master_GDD_v3_0.pdf) 
 bash tools/check.sh
 ```
 
-This imports the project, runs deterministic gameplay/state tests, exercises UI button flows, and checks the 3D map's routes/collision/sightlines. It uses temporary writable data directories and leaves your club save untouched. The script fails on command failures, Godot error output, or a missing completion marker.
+This imports the project, runs deterministic gameplay/state tests, exercises UI button flows, checks the 3D map's routes/collision/sightlines, and runs causal matches with resume, combat, objective and overtime scenarios. It uses temporary writable data directories and leaves your club save untouched. The script fails on command failures, Godot error output, or a missing completion marker.
 
 Individual checks, after setting the cloud XDG directories above:
 
@@ -57,7 +59,9 @@ godot --headless --path . --editor --import
 godot --headless --path . --script res://tests/test_game.gd -- --ephemeral
 godot --headless --path . -- --ephemeral --ui-smoke
 godot --headless --path . --script res://tests/test_spatial.gd -- --ephemeral
-godot --headless --path . --scene res://scenes/spatial_lab.tscn --quit-after 900 -- --ephemeral --spatial-smoke
+godot --headless --path . --quit-after 900 -- --ephemeral --spatial-smoke
+godot --headless --path . --script res://tests/test_live_match.gd -- --ephemeral
+godot --headless --path . --quit-after 900 -- --ephemeral --live-match-smoke
 ```
 
 For visual capture on an **existing graphical display**:
@@ -70,7 +74,7 @@ Use `--ephemeral` for experiments without loading or changing your saved club. N
 
 ## Scope
 
-This is an **offline prototype**. Trades are with local AI managers. The Dust II scene is a geometry/navigation test lab; it does not yet run combat, bomb objectives, or the match engine. The management game's match events remain an aggregate simulation with descriptive commentary. Online marketplace, paid currency, ranked service, and licensed player imagery remain future work. Portable export presets and test instructions are included; native Windows hardware coverage is still limited to tester feedback. Players and card/pack art are fictional/original; map geometry is the user-supplied STL. This project is not affiliated with Valve.
+This is an **offline alpha**. The played match runs ten agents, combat, equipment and bomb objectives on Dust II; the skip path retains the aggregate round simulator with 50% credits/XP. See [alpha 0.2](docs/ALPHA_0_2.md) for mechanics and limits. Trades use local AI managers. Online trading, paid currency, ranked services and licensed player imagery remain future work. Real names use custom game roles/ratings and neutral portrait placeholders. Card/pack graphics are original; map geometry is the user-supplied STL. This project is not affiliated with Valve or the players. Native Windows hardware testing still relies on tester feedback.
 
 The supplied 26-page [v2.0 master GDD](docs/reference/ESPORTS_CSTCG_Master_GDD_v2_0.pdf) has now been reconciled with the prototype into v3.0. The original is preserved unchanged. The older conversation link itself was unavailable; this merge uses the actual supplied PDF.
 

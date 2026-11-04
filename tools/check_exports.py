@@ -20,8 +20,10 @@ def main() -> None:
     cases = [
         ("linux-manager", [linux, "--headless", "--quit-after", "900", "--", "--ephemeral", "--ui-smoke"], "CSTCG_UI_SMOKE:"),
         ("linux-map", [linux, "--headless", "--quit-after", "900", "--", "--ephemeral", "--spatial-smoke"], "CSTCG_SPATIAL_UI:"),
+        ("linux-live-match", [linux, "--headless", "--quit-after", "900", "--", "--ephemeral", "--live-match-smoke"], "CSTCG_LIVE_UI:"),
         ("windows-pack-manager", ["godot", "--headless", "--main-pack", windows_pack, "--quit-after", "900", "--", "--ephemeral", "--ui-smoke"], "CSTCG_UI_SMOKE:"),
         ("windows-pack-map", ["godot", "--headless", "--main-pack", windows_pack, "--quit-after", "900", "--", "--ephemeral", "--spatial-smoke"], "CSTCG_SPATIAL_UI:"),
+        ("windows-pack-live-match", ["godot", "--headless", "--main-pack", windows_pack, "--quit-after", "900", "--", "--ephemeral", "--live-match-smoke"], "CSTCG_LIVE_UI:"),
     ]
     output_dir = ROOT / "builds/validation"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -34,7 +36,7 @@ def main() -> None:
             env[f"XDG_{name}_HOME"] = str(path)
         for name, command, marker in cases:
             result = subprocess.run(command, env=env, cwd=directory,
-                                    capture_output=True, text=True, timeout=45)
+                                    capture_output=True, text=True, timeout=90)
             output = result.stdout + result.stderr
             (output_dir / f"{name}.log").write_text(output)
             print(output.strip())
@@ -43,7 +45,7 @@ def main() -> None:
                 raise RuntimeError(f"Export check failed: {name}")
             receipt["checks"].append({"case": name, "status": "passed"})
     (ROOT / "builds/export-validation.json").write_text(json.dumps(receipt, indent=2) + "\n")
-    print("CSTCG_EXPORT_CHECKS: 4 checks passed; native Windows not run")
+    print("CSTCG_EXPORT_CHECKS: 6 checks passed; native Windows not run")
 
 
 if __name__ == "__main__":

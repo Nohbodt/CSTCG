@@ -51,51 +51,37 @@ func _draw() -> void:
 	var border = U.ORANGE if selected else Color(color, 0.5)
 	draw_style_box(U.box(Color("151c24"), 7, border, 0), Rect2(0, 0, 190, 290))
 	draw_rect(Rect2(1, 1, 188, 175), Color(color, 0.14))
-	# Printed geometric player portrait, deliberately independent of licensed imagery.
-	var variant = C.ROLES.find(card.role)
+	# Real identities use a supplied portrait when available; the alpha fallback
+	# is a neutral nameplate, never an invented face presented as the player.
 	for i in range(7):
 		_stripe(Vector2(-20 + i * 37, 174), Vector2(100 + i * 37, 1), Color(color, 0.13))
-	draw_circle(Vector2(102, 83), 55, Color(color, 0.09))
-	draw_arc(Vector2(102, 83), 63, -PI * 0.7, PI * 0.4, 32, Color(color, 0.4), 1.3)
-	var portrait = absi(card.id.hash())
-	var skins = [Color("b6a38b"), Color("c4ae98"), Color("8e7568"), Color("c5b8a4"), Color("a8876c")]
-	var skin = skins[portrait % skins.size()].lerp(color, 0.15)
-	var hair = [Color("22272d"), Color("7c624a"), Color("bbaa87"), Color("3b3030")][int(portrait / 7) % 4]
-	var jersey = Color("293541").lerp(color, 0.12 if card.rarity < 2 else 0.23)
-	draw_colored_polygon(PackedVector2Array([Vector2(44, 176), Vector2(49, 139), Vector2(80, 122), Vector2(90, 109), Vector2(114, 109), Vector2(124, 122), Vector2(152, 139), Vector2(165, 176)]), jersey)
-	draw_colored_polygon(PackedVector2Array([Vector2(84, 127), Vector2(102, 143), Vector2(121, 127), Vector2(115, 114), Vector2(90, 114)]), skin.darkened(0.32))
-	draw_circle(Vector2(102, 87), 28, skin)
-	if portrait % 3 == 0:
-		draw_colored_polygon(PackedVector2Array([Vector2(76, 84), Vector2(75, 69), Vector2(87, 54 - variant), Vector2(116, 53), Vector2(130, 72), Vector2(127, 85), Vector2(118, 73), Vector2(87, 76)]), hair)
-	elif portrait % 3 == 1:
-		draw_arc(Vector2(102, 85), 28, -PI, 0, 18, hair, 10)
-		draw_line(Vector2(79, 74), Vector2(122, 70), hair, 8)
+	if ResourceLoader.exists(card.get("portrait", "")):
+		var portrait: Texture2D = load(card.portrait)
+		var target = Rect2(51, 8, 130, 166)
+		var image_size = portrait.get_size()
+		var crop_size = Vector2(image_size.y * target.size.x / target.size.y, image_size.y)
+		if crop_size.x > image_size.x:
+			crop_size = Vector2(image_size.x, image_size.x * target.size.y / target.size.x)
+		draw_texture_rect_region(portrait, target, Rect2((image_size - crop_size) * 0.5, crop_size))
 	else:
-		draw_colored_polygon(PackedVector2Array([Vector2(75, 86), Vector2(76, 67), Vector2(93, 58), Vector2(124, 61), Vector2(130, 81), Vector2(119, 73), Vector2(104, 79), Vector2(84, 76)]), hair)
-	draw_line(Vector2(102, 84), Vector2(98, 99), skin.darkened(0.25), 2)
-	draw_line(Vector2(90, 106), Vector2(111, 106), skin.darkened(0.35), 1.5)
-	draw_line(Vector2(87, 86), Vector2(96, 86), Color("243340"), 2)
-	draw_line(Vector2(109, 86), Vector2(118, 86), Color("243340"), 2)
-	if portrait % 4 == 0:
-		draw_arc(Vector2(102, 91), 22, 0.15, PI - 0.15, 15, Color(hair, 0.7), 7)
-	if card.role == "AWPER":
-		draw_rect(Rect2(83, 81, 16, 11), Color("28313b"), false, 1.5)
-		draw_rect(Rect2(106, 81, 16, 11), Color("28313b"), false, 1.5)
-		draw_line(Vector2(99, 85), Vector2(106, 85), Color("28313b"), 1.5)
-	draw_line(Vector2(101, 145), Vector2(101, 176), Color(color, 0.55), 2)
-	_text("CC", Vector2(121, 159), 13, color)
+		draw_circle(Vector2(109, 91), 48, Color(color, 0.07))
+		draw_arc(Vector2(109, 91), 49, 0, TAU, 60, Color(color, 0.4), 1.3)
+		var monogram = card.handle.left(2).to_upper()
+		var width = U.DISPLAY.get_string_size(monogram, HORIZONTAL_ALIGNMENT_LEFT, -1, 40).x
+		_text(monogram, Vector2(109 - width / 2, 105), 40, Color(color, 0.85))
+		_text("PLAYER SERIES", Vector2(65, 159), 8, color, U.BOLD)
 	_text(str(card.overall), Vector2(12, 35), 27, U.TEXT)
 	_text(card.role, Vector2(13, 51), 9, color, U.BOLD)
 	_text(card.country, Vector2(154, 22), 11, U.TEXT, U.BOLD)
 	draw_rect(Rect2(1, 175, 188, 3), color)
-	_text(card.handle, Vector2(12, 204), 25, U.TEXT)
-	_text(card.club, Vector2(13, 222), 10, U.MUTED, U.BOLD)
+	_text(card.handle, Vector2(12, 204), 20 if card.handle.length() > 8 else 25, U.TEXT)
+	_text(card.name, Vector2(13, 222), 10, U.MUTED, U.BOLD)
 	draw_line(Vector2(13, 234), Vector2(177, 234), U.BORDER, 1)
 	for i in range(3):
 		var x = 13 + i * 58
 		_text(str([card.aim, card.sense, card.utility][i]), Vector2(x, 253), 16, U.TEXT)
 		_text(["AIM", "IQ", "UTIL"][i], Vector2(x, 267), 8, U.MUTED, U.BOLD)
-	_text(C.RARITIES[card.rarity] + " / S01", Vector2(13, 283), 8, color, U.BOLD)
+	_text(C.RARITIES[card.rarity] + " / ALPHA", Vector2(13, 283), 8, color, U.BOLD)
 	if fresh:
 		draw_rect(Rect2(126, 184, 53, 19), color)
 		_text("NEW", Vector2(135, 197), 10, U.BG)

@@ -36,3 +36,5 @@ run_check "CSTCG_TESTS:" --script res://tests/test_game.gd -- --ephemeral
 run_check "CSTCG_UI_SMOKE:" --quit-after 900 -- --ephemeral --ui-smoke
 run_check "CSTCG_SPATIAL_TESTS:" --script res://tests/test_spatial.gd -- --ephemeral
 run_check "CSTCG_SPATIAL_UI:" --quit-after 900 -- --ephemeral --spatial-smoke
+run_check "CSTCG_LIVE_TESTS:" --script res://tests/test_live_match.gd -- --ephemeral
+run_check "CSTCG_LIVE_UI:" --quit-after 900 -- --ephemeral --live-match-smoke

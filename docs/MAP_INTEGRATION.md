@@ -1,5 +1,7 @@
 # Dust II spatial foundation
 
+For the automatic played-match implementation built on this world, see [alpha 0.2](ALPHA_0_2.md). The developer lab described here remains a separate geometry tool.
+
 The uploaded `de_dust2+CS2+map.stl` is integrated into a Godot 3D authoring scene. The supplied inline radar guided orientation and provisional landmark placement. Rendered surfaces, collision, navigation, and sightline tests use the STL geometry; radar pixels do not define collision or connect overlapping floors.
 
 ![Dust II spatial lab](screenshots/dust2-overhead.png)
@@ -13,7 +15,7 @@ cd /workspace/CSTCG
 godot --path . --scene res://scenes/spatial_lab.tscn
 ```
 
-The scene includes the imported 3D map, static triangle collision, derived navigation, T/CT seed markers, A/B seed markers, and ten movement probes. It does not create combat outcomes, bomb events, economy payouts, or match rewards. The club's current aggregate simulator remains separate.
+The scene includes the imported 3D map, static triangle collision, derived navigation, T/CT seed markers, A/B seed markers, and ten movement probes. It does not create combat outcomes, bomb events, economy payouts, or match rewards. The club now uses this world in a separate played-match scene; the quick skip simulator also remains available.
 
 ## Controls
 
@@ -84,7 +86,7 @@ The same converted face set feeds rendering, static concave collision, and Recas
 
 Navigation gives a candidate route, not permission to pass through walls. Each movement step samples actual floor support across the capsule footprint, checks slope and maximum rise/drop, tests destination capsule clearance, and sweeps vertical/horizontal motion through map collision. Footprint support covers ascent and descent without clipping a stair riser. Probes reach path corners before changing direction, avoiding early corner cuts. Unsupported or blocked movement stops with a reason; it does not snap to another floor or a distant node.
 
-Void inputs more than 0.75 units from a navigation surface are rejected. Rooftops can be present as disconnected baked islands, but an unreachable click does not teleport a probe there. Sightline rays use actual supported eye positions, return the first mesh hit, and have no artificial weapon-distance rule. Penetration, weapon spread, visibility knowledge, and fog of war remain later systems.
+Void inputs more than 0.75 units from a navigation surface are rejected. Rooftops can be present as disconnected baked islands, but an unreachable click does not teleport a probe there. Sightline rays use actual supported eye positions, return the first mesh hit, and have no artificial weapon-distance rule. The played-match engine adds ray-based perception, smoke occlusion and simplified weapons. Penetration, recoil patterns and competitive spectator fog of war remain later systems.
 
 ## Validation evidence
 
@@ -105,6 +107,6 @@ These are simulated traversal times at the test speed, not benchmark wall times 
 
 The viewer smoke deploys ten probes, uses the route controls, traverses a route, selects a probe through viewport input, tests an occluded Shift-click ray, toggles cameras/navigation, pauses/resumes, and checks the club data is untouched. Graphical captures are reviewed using Mesa software rendering; platform exports and broad GPU compatibility are not established by this.
 
-## Next layer
+## Match layer
 
-Use this world interface for one causal round: legal spawns, ten card-driven agents, perception/communication, equipment purchases, combat, utility, bomb ownership/plant/defuse, and event-based settlement. Author and test actual plant/spawn volumes and map semantics before treating the seeds as gameplay zones. Then run complete seeded MR8/MR12 matches and connect their authoritative events to the manager/reward loop. No legacy Godot simulation scripts were supplied with these assets, so the geometry integration does not claim to contain that earlier engine.
+The [alpha 0.2 engine](ALPHA_0_2.md) now connects ten card-driven agents, perception, purchases, combat, utility and the bomb objective to full MR12/MR3 matches and the manager's rewards. It validates and caches travel tracks through this world interface. Match spawn formations and provisional plant volumes are derived around the retained seeds. The developer lab remains useful for inspecting geometry independently. Refine map semantics, collision avoidance and tactical behavior before treating this as an accurate CS2 simulation.

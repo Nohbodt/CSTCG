@@ -16,22 +16,25 @@ On Linux, the portable build runs with `./CSTCG.x86_64` after extracting its arc
 2. Open a pack, tear the wrapper, reveal its five cards, and select **Build your five**.
 3. Add a new player to the lineup. The previous player should remain in your collection.
 4. Try a local AI trade at **Trade desk**. The last copy of an active player stays protected.
-5. Choose a map and tactic in **Match room**, then play a simulated match. Check the result and rewards.
-6. Open **Match room → Open 3D map lab**. Try an overhead/angled view, select a route, and use **Reset & walk route**.
-7. In the map lab, Shift-click two walkable surfaces to inspect a sightline. Middle-drag pans; the wheel zooms; V changes the view.
-8. Return to the club, close the game, and reopen it. Your cards, credits, lineup, and match history should remain.
+5. Set a tactic in **Match room**, then select **Play match**. Cancel the choice once; your match count and wallet should stay unchanged.
+6. Select **Play out match**. Watch the automatic Dust II match, follow a player, change cameras, pause, and change speed. At full time, check full rewards: 160 CR / 100 XP for a win or 85 CR / 60 XP for a loss.
+7. For the next fixture choose **Skip to result (less rewards)**. The report appears immediately, with 80 CR / 50 XP for a win or 43 CR / 30 XP for a loss. Viewing this report again must not repeat its payout.
+8. Start another played match. After a completed round, return to the club and reopen the match. Its current round restarts with the same seed; the previous score remains. Reopening the whole app should also preserve it.
+9. Open **Match room → Open 3D map lab**. Try an overhead/angled view, select a route, and use **Reset & walk route**.
+10. In the map lab, Shift-click two walkable surfaces to inspect a sightline. Middle-drag pans; the wheel zooms; V changes the view.
+11. Return to the club, close the game, and reopen it. Your cards, credits, lineup, and match history should remain.
 
-The Dust II map lab tests geometry, movement, and sightlines. Combat and bomb objectives are not yet connected to it. The management game's match engine currently uses aggregate round probabilities. Trades are with local AI managers. The v3 GDD describes the fuller proposed game rather than the contents of this prototype.
+Dust II is the alpha's only match map. The separate map lab remains a geometry tool and does not affect your club. Played matches use causal movement, combat and bomb objectives; skipped matches use the original aggregate simulation. See [alpha 0.2 notes](docs/ALPHA_0_2.md) in the source ZIP for details. Real public player identities have custom alpha roles/stats and neutral monograms; photographic portraits are not bundled. Trades use local AI managers. The v3 GDD describes the fuller proposed game.
 
 ## Saves and reports
 
-The game saves locally. On Windows the default directory is `%APPDATA%\Godot\app_userdata\CSTCG · Club Circuit\`; engine logs are in its `logs` subdirectory. Back up `club_v1.json` before deliberately starting over. The `--ephemeral` launch argument starts an unsaved test session.
+The game saves locally. On Windows the default directory is `%APPDATA%\Godot\app_userdata\CSTCG · Club Circuit\`; engine logs are in its `logs` subdirectory. Back up `club_v1.json` before deliberately starting over. Older clubs migrate in place to real player IDs and preserve all quantities and progression; the original file is backed up as `club_v1.json.before-alpha2.bak`. The `--ephemeral` launch argument starts an unsaved test session. A played fixture locks roster, packs and strategy until it finishes.
 
 For a useful bug report, include the build's `BUILD_INFO.txt`, your operating system, the screen/action, expected behavior, observed behavior, and a screenshot or log if available. Mention whether the issue repeats after reopening the game.
 
 ## Validation scope
 
-The source project passes headless gameplay/state checks, UI button flows, and twelve collision-walked map routes. Graphical scenes have been reviewed under Linux/Mesa at 1440×960 and 1100×740. Exported Linux and packaged-resource checks are recorded with the test artifacts. A Windows export is not a claim that it has already been exercised on native Windows hardware.
+The source project passes headless gameplay/state checks, UI button flows, twelve collision-walked map routes, complete causal matches, wall/smoke occlusion, bomb rules, overtime, save migration and deterministic match resume. Graphical scenes have been reviewed under Linux/Mesa at 1440×960 and 1100×740. Exported Linux and packaged-resource checks are recorded with the test artifacts. A Windows export is not a claim that it has already been exercised on native Windows hardware.
 
 ## Rebuild the portable exports
 

@@ -19,17 +19,17 @@ def package(output: Path) -> None:
     if dirty:
         raise RuntimeError("Commit source changes before packaging so BUILD_INFO matches the source ZIP")
     validation = json.loads((ROOT / "builds/export-validation.json").read_text())
-    if len(validation["checks"]) != 4 or any(c["status"] != "passed" for c in validation["checks"]):
+    if len(validation["checks"]) != 6 or any(c["status"] != "passed" for c in validation["checks"]):
         raise RuntimeError("Run tools/check_exports.py successfully before packaging")
     output.mkdir(parents=True, exist_ok=True)
     version = subprocess.check_output(["godot", "--version"], text=True).strip()
     info = (
-        "CSTCG / Club Circuit — playable prototype\n"
+        "CSTCG / Club Circuit — Dust II alpha 0.2\n"
         f"Source commit: {commit}\n"
         f"Engine: {version}\n"
         f"Packaged (UTC): {datetime.now(timezone.utc).isoformat()}\n"
-        "Source gameplay/state/UI and 12 collision-walked map routes passed.\n"
-        "Linux executable and Windows PCK manager/map smoke checks passed.\n"
+        "Source state/migration/UI, causal matches, and 12 physical map routes passed.\n"
+        "Linux executable and Windows PCK manager/map/live-match checks passed.\n"
         "Native Windows hardware execution was not performed.\n"
         "See TESTING.md for test steps and current prototype scope.\n"
     )

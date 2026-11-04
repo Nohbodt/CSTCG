@@ -18,7 +18,7 @@ static func rating(lineup: Array, map_index: int, tactic: int) -> float:
 			value = c.aim * 0.60 + c.sense * 0.25 + c.utility * 0.15
 		elif tactic == 2:
 			value = c.aim * 0.25 + c.sense * 0.40 + c.utility * 0.35
-		if c.role == C.MAP_ROLES[map_index]:
+		if c.role == C.MAP_ROLES[clampi(map_index, 0, C.MAP_ROLES.size() - 1)]:
 			value += 3.0
 		total += value
 		if c.role not in roles:

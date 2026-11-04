@@ -41,7 +41,9 @@ func _ready() -> void:
 		_show_pack(true)
 	if not Game.last_error.is_empty():
 		notify(Game.last_error)
-	if "--spatial-smoke" in OS.get_cmdline_user_args():
+	if "--live-match-smoke" in OS.get_cmdline_user_args():
+		call_deferred("_launch_live_smoke")
+	elif "--spatial-smoke" in OS.get_cmdline_user_args():
 		call_deferred("_launch_spatial_smoke")
 	elif "--ui-smoke" in OS.get_cmdline_user_args():
 		call_deferred("_ui_smoke")
@@ -55,6 +57,17 @@ func _launch_spatial_smoke() -> void:
 		return
 	navigate(4)
 	_smoke_press("Open 3D map lab   ↗")
+
+func _launch_live_smoke() -> void:
+	if Game.save_enabled:
+		printerr("Live smoke requires --ephemeral; refusing to change a real save.")
+		get_tree().quit(1)
+		return
+	Game.rng.seed = 77
+	navigate(4)
+	_smoke_press("Play match   →")
+	_smoke_expect(Game.data.matches == 0 and not Game.has_active_match(), "choice does not start a match")
+	_smoke_press("Play out match")
 
 func _build_shell() -> void:
 	var background = ColorRect.new()
@@ -103,7 +116,7 @@ func _build_shell() -> void:
 	motion.add_theme_font_size_override("font_size", 11)
 	motion.toggled.connect(func(on): reduced_motion = on)
 	side.add_child(motion)
-	side.add_child(U.label("LOCAL PROTOTYPE  /  v0.1", 9, U.MUTED))
+	side.add_child(U.label("OFFLINE ALPHA  /  v0.2", 9, U.MUTED))
 	var sidebar = U.panel(side, Color("11151a"), 18)
 	sidebar.size_flags_horizontal = Control.SIZE_FILL
 	sidebar.add_theme_stylebox_override("panel", U.box(Color("11151a"), 0, U.BORDER, 18))
@@ -173,6 +186,11 @@ func navigate(index: int) -> void:
 		var active = i == index
 		nav_buttons[i].add_theme_stylebox_override("normal", U.box(Color("30251f") if active else Color(0, 0, 0, 0), 5, Color("6b4430") if active else Color(0, 0, 0, 0), 12))
 		nav_buttons[i].add_theme_color_override("font_color", U.ORANGE if active else U.MUTED)
+	if Game.has_active_match():
+		var resume_row = U.hbox(14)
+		resume_row.add_child(U.paragraph("DUST II MATCH IN PROGRESS\nYour lineup, collection and tactic are locked until this fixture finishes. Resume at the start of the current round.", 12, U.LIME))
+		resume_row.add_child(U.button("Resume match   →", _launch_played_match, true))
+		body.add_child(U.panel(resume_row))
 	match index:
 		0: _overview()
 		1: _squad()
@@ -246,7 +264,7 @@ func _overview() -> void:
 	fixture.add_child(U.label("vs. " + Game.opponent().name, 17, U.MUTED, true))
 	fixture.add_child(U.divider())
 	fixture.add_child(U.label(C.MAPS[int(Game.data.map)], 11, U.TEXT, true))
-	fixture.add_child(U.paragraph("Win: 160 CR  ·  Loss: 85 CR\nEvery fourth match earns a pack.", 12))
+	fixture.add_child(U.paragraph("Play out: 160 / 85 CR\nSkip: 80 / 43 CR (win / loss)\nEvery fourth match earns a pack.", 12))
 	fixture.add_child(U.button("Prepare your tactics   →", func(): navigate(4)))
 	next.add_child(U.panel(fixture))
 	lower.add_child(next)
@@ -296,12 +314,12 @@ func _card_tile(id: String, actions: bool = false, show_count: bool = true) -> V
 				navigate(page)
 			else:
 				_action_failed())
-		equip_button.disabled = id in Game.data.squad
+		equip_button.disabled = id in Game.data.squad or Game.has_active_match()
 		tile.add_child(equip_button)
 	return tile
 
 func _squad() -> void:
-	_heading("ROSTER MANAGEMENT", "Five roles. One identity.", "Build a balanced lineup. Matching roles, map strengths, and shared clubs influence the simulation.")
+	_heading("ROSTER MANAGEMENT", "Five roles. One identity.", "Build a balanced lineup from real player identities. Alpha ratings and assigned roles are custom game values; collection series are not real teams.")
 	var summary = U.hbox(12)
 	_stat(summary, "EFFECTIVE RATING", str(Game.team_rating()), "Includes role and chemistry bonuses", U.ORANGE)
 	_stat(summary, "ROLE COVERAGE", "5 / 5", "Entry · AWPer · IGL · Support · Lurker", U.LIME)
@@ -364,7 +382,7 @@ func _packs() -> void:
 		var buttons = U.hbox(10)
 		var open = U.button("Open pack   ↗" if Game.data.packs[id] > 0 else "No packs owned", func(): _open_pack(pack_id), true)
 		open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		open.disabled = Game.data.packs[id] <= 0
+		open.disabled = Game.data.packs[id] <= 0 or Game.has_active_match()
 		buttons.add_child(open)
 		var buy = U.button("Get pack · %d CR" % pack.price, func():
 			if Game.purchase_pack(pack_id):
@@ -372,7 +390,7 @@ func _packs() -> void:
 				navigate(2)
 			else:
 				_action_failed())
-		buy.disabled = Game.data.credits < pack.price
+		buy.disabled = Game.data.credits < pack.price or Game.has_active_match()
 		buttons.add_child(buy)
 		col.add_child(buttons)
 		row.add_child(U.panel(col, U.SURFACE, 22))
@@ -450,7 +468,7 @@ func _collection() -> void:
 	body.add_child(grid)
 
 func _match_room() -> void:
-	_heading("THE OPEN CIRCUIT", "The cards don't make the calls. You do.", "Scout the opposition, choose the map, and shape your approach. A round-by-round simulation resolves the match.")
+	_heading("THE OPEN CIRCUIT", "Your five. Your call.", "Choose your approach, then watch your players compete on Dust II or skip to a quick result for fewer rewards.")
 	var fixture = U.hbox(30)
 	var own = U.vbox(4)
 	own.add_child(U.label("YOUR CLUB", 10, U.MUTED, true))
@@ -479,6 +497,7 @@ func _match_room() -> void:
 			else:
 				_action_failed(), i == Game.data.map)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.disabled = Game.has_active_match()
 		b.add_theme_font_size_override("font_size", 11)
 		map_buttons.add_child(b)
 	preparation.add_child(map_buttons)
@@ -489,7 +508,7 @@ func _match_room() -> void:
 	map_art.map_mode = true
 	map_panel.add_child(map_art)
 	preparation.add_child(map_panel)
-	preparation.add_child(U.paragraph("Abstract tactical diagram · not a recreation of a CS2 map.\nMap affinity: +3 individual rating for your " + C.MAP_ROLES[int(Game.data.map)] + ".", 11))
+	preparation.add_child(U.paragraph("DUST II · THE ALPHA BATTLEGROUND\nPlay out on the uploaded 3D map. More maps will arrive in future builds. Diagram shown here is decorative.", 11))
 	row.add_child(preparation)
 	var strategy = U.vbox(14)
 	strategy.add_child(U.section("02 / SET YOUR APPROACH"))
@@ -502,10 +521,11 @@ func _match_room() -> void:
 			else:
 				_action_failed())
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.disabled = Game.has_active_match()
 		if Game.data.tactic == i:
 			b.add_theme_color_override("font_color", U.ORANGE)
 		block.add_child(b)
-		block.add_child(U.paragraph(["Equal stat weights. Counters fast execute.", "Aim-led pressure. Counters map control.", "Game sense and utility. Counters balanced."][i], 11))
+		block.add_child(U.paragraph(["A measured site attack and balanced stat weights.", "Faster pressure; favors B-site executes and aim.", "Slower setup with a mid player; favors game sense and utility."][i], 11))
 		strategy.add_child(block)
 	strategy.add_child(U.divider())
 	strategy.add_child(U.paragraph("MR12 regulation · first to 13\n12–12 triggers MR3 overtime\nEquipment economy + CT/T side advantage", 12))
@@ -514,11 +534,11 @@ func _match_room() -> void:
 	var launch = U.hbox(16)
 	var reward = U.vbox(4)
 	reward.add_child(U.label("EVERY MATCH MOVES YOU FORWARD", 11, U.LIME, true))
-	reward.add_child(U.label("Win +160 CR / +100 XP    ·    Loss +85 CR / +60 XP", 12, U.MUTED))
+	reward.add_child(U.paragraph("Play out: 160 / 85 CR · 100 / 60 XP (win / loss)    |    Skip: 50% credits & XP", 12, U.MUTED))
 	reward.add_child(U.label("%d / 4 matches toward your next Contender pack" % (int(Game.data.matches) % 4), 11, U.MUTED))
 	launch.add_child(reward)
 	launch.add_child(U.spacer())
-	launch.add_child(U.button("Play match   →", _play_match, true))
+	launch.add_child(U.button("Resume match   →" if Game.has_active_match() else "Play match   →", _play_match, true))
 	body.add_child(U.panel(launch))
 	var map_preview = U.hbox(14)
 	map_preview.add_child(U.paragraph("Dust II map preview · explore the uploaded 3D geometry, routes, and sightlines.", 12))
@@ -695,18 +715,59 @@ func _finish_pack(destination: int) -> void:
 		_action_failed()
 
 func _play_match() -> void:
-	var result = Game.play_match()
+	if Game.has_active_match():
+		_launch_played_match()
+		return
+	if not Game.data.pending_pack.is_empty():
+		_action_failed()
+		return
+	var content = _modal_base()
+	content.add_child(_gap(70))
+	content.add_child(U.section("MATCH %02d / DUST II" % (Game.data.matches + 1), "NORTHLINE VS " + Game.opponent().name))
+	content.add_child(U.label("How do you want to play?", 38, U.TEXT, true))
+	content.add_child(U.paragraph("Your lineup and tactic are ready. Both modes count toward your next pack reward.", 15))
+	var choices = U.hbox(22)
+	var played = U.vbox(16)
+	played.add_child(U.badge("FULL REWARDS", U.LIME))
+	played.add_child(U.label("Watch your five compete.", 25, U.TEXT, true))
+	played.add_child(U.paragraph("A 3D automatic match on Dust II. Follow players, change cameras, pause, and control playback speed. Movement, fights, and the bomb determine the result.", 14))
+	played.add_child(U.label("WIN   +160 CR / +100 XP\nLOSS   +85 CR / +60 XP", 14, U.LIME, true))
+	played.add_child(U.paragraph("About 3 minutes at 8×. Completed rounds save automatically.", 12))
+	played.add_child(U.button("Play out match", _begin_played_match, true))
+	choices.add_child(U.panel(played, U.SURFACE, 26))
+	var skipped = U.vbox(16)
+	skipped.add_child(U.badge("50% CREDITS & XP", U.ORANGE))
+	skipped.add_child(U.label("Go straight to the report.", 25, U.TEXT, true))
+	skipped.add_child(U.paragraph("The quick round simulation resolves your fixture immediately. Review the score, round feed, and standout player, then get back to building your club.", 14))
+	skipped.add_child(U.label("WIN   +80 CR / +50 XP\nLOSS   +43 CR / +30 XP", 14, U.ORANGE, true))
+	skipped.add_child(U.paragraph("Instant result. The same pack milestone progress.", 12))
+	skipped.add_child(U.button("Skip to result (less rewards)", _skip_match))
+	choices.add_child(U.panel(skipped, U.SURFACE, 26))
+	content.add_child(choices)
+	content.add_child(U.button("Cancel", _close_modal))
+
+func _begin_played_match() -> void:
+	if Game.begin_spatial_match():
+		_launch_played_match()
+	else:
+		_action_failed()
+
+func _launch_played_match() -> void:
+	get_tree().change_scene_to_file("res://scenes/played_match.tscn")
+
+func _skip_match() -> void:
+	var result = Game.skip_match()
 	if result.is_empty():
 		_action_failed()
 	else:
-		_show_match(result, true)
+		_show_match(result, false)
 
 func _show_match(result: Dictionary, animate: bool) -> void:
 	replay_result = result
 	replay_index = 0
 	replay_chips = []
 	var content = _modal_base()
-	content.add_child(U.section("THE OPEN CIRCUIT / MATCH REPORT", C.MAPS[int(result.map)]))
+	content.add_child(U.section("THE OPEN CIRCUIT / MATCH REPORT", C.map_label(result) + " / " + str(result.get("mode", "legacy")).to_upper()))
 	var score = U.hbox(30)
 	score.alignment = BoxContainer.ALIGNMENT_CENTER
 	score.add_child(U.label("NORTHLINE", 32, U.TEXT, true))
@@ -738,7 +799,7 @@ func _show_match(result: Dictionary, animate: bool) -> void:
 	map_panel.add_child(arena)
 	replay_row.add_child(map_panel)
 	var log_col = U.vbox(10)
-	log_col.add_child(U.section("ROUND FEED", "SIMULATED PLAYBACK"))
+	log_col.add_child(U.section("ROUND FEED", "QUICK SIMULATION" if result.get("mode") == "skipped" else "SAVED REPORT"))
 	replay_log = RichTextLabel.new()
 	replay_log.bbcode_enabled = true
 	replay_log.custom_minimum_size = Vector2(420, 235)
@@ -773,7 +834,9 @@ func _advance_round() -> void:
 	var col = U.LIME if round_data.winner == 0 else U.ORANGE
 	replay_chips[replay_index].add_theme_stylebox_override("panel", U.box(Color(col, 0.12), 3, Color(col, 0.4), 6))
 	replay_log.append_text("[color=#%s]R%02d  %s[/color]  %s\n\n" % [col.to_html(false), round_data.number, "WIN" if round_data.winner == 0 else "LOSS", round_data.detail])
-	replay_economy.text = "Next-round equipment budgets: %d / %d  ·  Previous round win chance: %d%%" % [round_data.cash[0], round_data.cash[1], round_data.chance * 100]
+	replay_economy.text = "Next-round equipment budgets: %d / %d" % [round_data.cash[0], round_data.cash[1]]
+	if round_data.chance >= 0:
+		replay_economy.text += "  ·  Quick simulation round chance: %d%%" % (round_data.chance * 100)
 	replay_index += 1
 	if replay_index >= replay_result.rounds.size():
 		_complete_replay()
@@ -840,12 +903,12 @@ func _confirm(title: String, detail: String, action: String, callback: Callable)
 func _show_help() -> void:
 	var content = _modal_base()
 	content.add_child(U.label("Welcome to the circuit.", 38, U.TEXT, true))
-	content.add_child(U.paragraph("A single-player Counter-Strike-inspired club manager and card collector. All players and clubs are fictional; this prototype is not affiliated with Valve.", 15))
+	content.add_child(U.paragraph("A single-player Counter-Strike-inspired club manager and card collector with real public player identities. Ratings, roles, and collection series are alpha game tuning. This independent prototype is not affiliated with Valve or the players.", 15))
 	var steps = [
 		["01 / OPEN YOUR STARTER PACKS", "Two Contender packs are already in your locker. Each contains five cards with a Rare-or-better fifth card. Pack contents are saved before reveal."],
 		["02 / BUILD YOUR FIVE", "Use My squad or Collection to add a player. The new card replaces the same role; the old player stays in your collection."],
-		["03 / PREPARE AND PLAY", "Choose a map and tactic in Match room. Ratings, roles, chemistry, tactics, sides, and equipment economy influence each round. Card rarity alone never guarantees a win."],
-		["04 / EARN YOUR NEXT SIGNING", "Win: 160 CR and 100 XP. Loss: 85 CR and 60 XP. Every fourth match earns a Contender pack; every twelfth also earns an Elite pack."],
+		["03 / PREPARE AND PLAY", "Set your tactic in Match room. Play out match watches an automatic 3D Dust II match with movement, combat, and the bomb objective. Pause, change cameras, follow players, or speed up to 16×. Return to club resumes from the start of the current round."],
+		["04 / EARN YOUR NEXT SIGNING", "Played match: win 160 CR / 100 XP; loss 85 CR / 60 XP. Skip to result: win 80 CR / 50 XP; loss 43 CR / 30 XP. Every fourth completed match earns a Contender pack; every twelfth also earns an Elite pack. Rewards save once at full time."],
 		["05 / MAKE THE EXCHANGE", "Trade spare cards with local AI managers or release them for credits. One active copy is always protected. Offers refresh every four matches."],
 		["A NOTE ON THIS BUILD", "This is an offline prototype with local JSON saves. Online trading, ranked play, player contracts, licensed rosters, and paid purchases are not implemented. Headless simulation is supported; visual play requires a desktop display."]]
 	for step in steps:
@@ -925,10 +988,16 @@ func _ui_smoke() -> void:
 	_smoke_press("Confirm trade")
 	_smoke_expect(Game.total_cards() == int(before_trade.cards.values().reduce(func(a, b): return a + b, 0)) and Game.offers()[0].used, "confirmed trade transfers exactly one card each way")
 	navigate(4)
-	_smoke_press("MIRAGE")
+	_smoke_press("DUST II")
 	_smoke_press("○  FAST EXECUTE")
-	_smoke_expect(Game.data.map == 1 and Game.data.tactic == 1, "map and tactic buttons update simulation inputs")
+	_smoke_expect(Game.data.map == 0 and Game.data.tactic == 1, "Dust II and tactic buttons update simulation inputs")
 	_smoke_press("Play match   →")
+	_smoke_expect(Game.data.matches == 0, "opening chooser grants no result")
+	await _capture("08_match_choice")
+	_smoke_press("Cancel")
+	_smoke_expect(Game.data.matches == 0, "cancelling chooser preserves fixture")
+	_smoke_press("Play match   →")
+	_smoke_press("Skip to result (less rewards)")
 	await get_tree().process_frame
 	_smoke_expect(Game.data.matches == 1, "launching match grants one result")
 	await get_tree().process_frame
@@ -939,10 +1008,12 @@ func _ui_smoke() -> void:
 	_smoke_press("View result")
 	_smoke_expect(Game.data.matches == 1 and Game.data.credits == wallet, "viewing history never grants rewards again")
 	_smoke_press("Back to the club   →")
-	# A second report verifies the timer-driven path as well as reduced motion.
+	# History playback remains available without repeating settlement.
 	reduced_motion = false
 	navigate(4)
 	_smoke_press("Play match   →")
+	_smoke_press("Skip to result (less rewards)")
+	_show_match(Game.data.history[0], true)
 	if is_instance_valid(replay_timer):
 		replay_timer.stop()
 		while replay_index < replay_result.rounds.size():

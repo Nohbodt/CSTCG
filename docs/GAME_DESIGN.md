@@ -2,7 +2,7 @@
 
 **Game design v0.1 — working prototype and full-game direction**
 
-> Historical prototype specification. The reconciled design recommendation is now [Master GDD v3.0](ESPORTS_CSTCG_Master_GDD_v3_0.md), which incorporates the supplied v2.0 PDF. The rules below describe the earlier playable prototype and are retained for implementation reference; references to an unavailable earlier draft reflect when this file was written.
+> Historical prototype specification. Current implemented changes are documented in [alpha 0.2](ALPHA_0_2.md). The reconciled design recommendation is now [Master GDD v3.0](ESPORTS_CSTCG_Master_GDD_v3_0.md), which incorporates the supplied v2.0 PDF. The rules below describe the earlier playable prototype and are retained for implementation reference; references to an unavailable earlier draft reflect when this file was written.
 
 ## 1. The game in one paragraph
 

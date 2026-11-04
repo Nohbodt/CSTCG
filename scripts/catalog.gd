@@ -5,8 +5,9 @@ const ROLES = ["ENTRY", "AWPER", "IGL", "SUPPORT", "LURKER"]
 const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
 const COLORS = [Color("8eaaa6"), Color("69adf3"), Color("b5a0ff"), Color("f2c66c")]
 const QUICK_SELL = [8, 20, 55, 150]
-const MAPS = ["DE / OVERPASS", "DE / MIRAGE", "DE / ANCIENT"]
-const MAP_ROLES = ["SUPPORT", "AWPER", "LURKER"]
+const MAPS = ["DE / DUST II"]
+const MAP_ROLES = ["SUPPORT"]
+const LEGACY_MAPS = ["DE / OVERPASS", "DE / MIRAGE", "DE / ANCIENT"]
 const TACTICS = ["BALANCED", "FAST EXECUTE", "MAP CONTROL"]
 const PACKS = {
 	"contender": {"name": "CONTENDER", "subtitle": "A new name. A new possibility.", "price": 200,
@@ -17,50 +18,67 @@ const PACKS = {
 		"guarantee": "1 EPIC OR BETTER", "short": "Bigger stages. Exceptional talent."}
 }
 
-# Fictional players and clubs. Rarity is fixed per card; odds select a rarity,
-# then uniformly select a player in that rarity. No paid currency.
+# Real public player identities, spanning different eras. Roles and numbers are
+# alpha gameplay tuning, not live statistics, real-world rankings or contracts.
+# The collection label is not a player's real organization.
 const PLAYERS = [
-	["spark", "SPARK", "Milo Voss", "ENTRY", 0, "NORTHLINE", "DK", 66, 58, 61],
-	["scope", "SCOPE", "Leon Beck", "AWPER", 0, "NORTHLINE", "DE", 69, 57, 59],
-	["relay", "RELAY", "Alex Chen", "IGL", 0, "NORTHLINE", "CA", 57, 70, 63],
-	["patch", "PATCH", "Sam Costa", "SUPPORT", 0, "NORTHLINE", "BR", 59, 65, 69],
-	["drift", "DRIFT", "Noah Reed", "LURKER", 0, "NORTHLINE", "UK", 64, 64, 62],
-	["flint", "FLINT", "Theo Park", "ENTRY", 0, "STATIC", "KR", 70, 60, 60],
-	["glass", "GLASS", "Eli Ward", "AWPER", 0, "STATIC", "US", 71, 62, 60],
-	["tempo", "TEMPO", "Ivo Silva", "IGL", 0, "STATIC", "PT", 61, 72, 65],
-	["moss", "MOSS", "Owen Lake", "SUPPORT", 0, "STATIC", "AU", 61, 66, 71],
-	["rune", "RUNE", "Nils Berg", "LURKER", 0, "STATIC", "SE", 67, 68, 62],
-	["raze", "RAZE", "Luca Vale", "ENTRY", 1, "AFTERHOURS", "IT", 82, 69, 70],
-	["sight", "SIGHT", "Emil Frost", "AWPER", 1, "AFTERHOURS", "DK", 84, 70, 67],
-	["atlas", "ATLAS", "Robin Nyx", "IGL", 1, "AFTERHOURS", "FI", 68, 86, 72],
-	["echo", "ECHO", "Yuri Sol", "SUPPORT", 1, "AFTERHOURS", "BR", 71, 76, 83],
-	["veil", "VEIL", "Jules Arno", "LURKER", 1, "AFTERHOURS", "FR", 77, 82, 70],
-	["fuse", "FUSE", "Kim Sol", "ENTRY", 1, "RED SHIFT", "KR", 85, 70, 72],
-	["zero", "ZERO", "Max Adler", "AWPER", 1, "RED SHIFT", "DE", 86, 73, 69],
-	["vector", "VECTOR", "Ari West", "IGL", 1, "RED SHIFT", "US", 72, 85, 74],
-	["haven", "HAVEN", "Ben Ellis", "SUPPORT", 1, "RED SHIFT", "UK", 72, 78, 84],
-	["haze", "HAZE", "Rene Holm", "LURKER", 1, "RED SHIFT", "NO", 81, 81, 73],
-	["nova", "NOVA", "Enzo Moreau", "ENTRY", 2, "MONOLITH", "FR", 93, 77, 78],
-	["prism", "PRISM", "Tomas Varga", "AWPER", 2, "MONOLITH", "CZ", 95, 78, 76],
-	["axiom", "AXIOM", "Sasha Volkov", "IGL", 2, "MONOLITH", "UA", 78, 94, 82],
-	["pulse", "PULSE", "Dani Lima", "SUPPORT", 2, "MONOLITH", "BR", 79, 85, 93],
-	["ghost", "GHOST", "Kai Jensen", "LURKER", 2, "MONOLITH", "DK", 88, 91, 80],
-	["blaze", "BLAZE", "Rafi Noor", "ENTRY", 3, "SOLSTICE", "TR", 99, 87, 89],
-	["oracle", "ORACLE", "Jae Moon", "AWPER", 3, "SOLSTICE", "KR", 99, 90, 87],
-	["crown", "CROWN", "Lars Winter", "IGL", 3, "SOLSTICE", "SE", 87, 99, 91],
-	["saint", "SAINT", "Andre Cruz", "SUPPORT", 3, "SOLSTICE", "PT", 88, 92, 99],
-	["onyx", "ONYX", "Leo Sato", "LURKER", 3, "SOLSTICE", "JP", 94, 98, 88]
+	["yekindar", "YEKINDAR", "Mareks Gaļinskis", "ENTRY", 0, "FOUNDATION", "LV", 66, 58, 61],
+	["syrson", "syrsoN", "Florian Rische", "AWPER", 0, "FOUNDATION", "DE", 69, 57, 59],
+	["gla1ve", "gla1ve", "Lukas Rossander", "IGL", 0, "FOUNDATION", "DK", 57, 70, 63],
+	["rush", "RUSH", "William Wierzba", "SUPPORT", 0, "FOUNDATION", "US", 59, 65, 69],
+	["jks", "jks", "Justin Savage", "LURKER", 0, "FOUNDATION", "AU", 64, 64, 62],
+	["rain", "rain", "Håvard Nygaard", "ENTRY", 0, "PROSPECTS", "NO", 70, 60, 60],
+	["sh1ro", "sh1ro", "Dmitriy Sokolov", "AWPER", 0, "PROSPECTS", "RU", 71, 62, 60],
+	["alex", "ALEX", "Alex McMeekin", "IGL", 0, "PROSPECTS", "GB", 61, 72, 65],
+	["interz", "interz", "Timofey Yakushin", "SUPPORT", 0, "PROSPECTS", "RU", 61, 66, 71],
+	["f1ku", "F1KU", "Maciej Miklas", "LURKER", 0, "PROSPECTS", "PL", 67, 68, 62],
+	["xantares", "XANTARES", "İsmail Dörtkardeş", "ENTRY", 1, "CHALLENGERS", "TR", 82, 69, 70],
+	["broky", "broky", "Helvijs Saukants", "AWPER", 1, "CHALLENGERS", "LV", 84, 70, 67],
+	["siuhy", "siuhy", "Kamil Szkaradek", "IGL", 1, "CHALLENGERS", "PL", 68, 86, 72],
+	["perfecto", "Perfecto", "Ilya Zalutskiy", "SUPPORT", 1, "CHALLENGERS", "RU", 71, 76, 83],
+	["ropz", "ropz", "Robin Kool", "LURKER", 1, "CHALLENGERS", "EE", 77, 82, 70],
+	["elige", "EliGE", "Jonathan Jablonowski", "ENTRY", 1, "WORLD CIRCUIT", "US", 85, 70, 72],
+	["m0nesy", "m0NESY", "Ilya Osipov", "AWPER", 1, "WORLD CIRCUIT", "RU", 86, 73, 69],
+	["karrigan", "karrigan", "Finn Andersen", "IGL", 1, "WORLD CIRCUIT", "DK", 72, 85, 74],
+	["xyp9x", "Xyp9x", "Andreas Højsleth", "SUPPORT", 1, "WORLD CIRCUIT", "DK", 72, 78, 84],
+	["nertz", "NertZ", "Guy Iluz", "LURKER", 1, "WORLD CIRCUIT", "IL", 81, 81, 73],
+	["donk", "donk", "Danil Kryshkovets", "ENTRY", 2, "ELITE SERIES", "RU", 93, 77, 78],
+	["zywoo", "ZywOo", "Mathieu Herbaut", "AWPER", 2, "ELITE SERIES", "FR", 95, 78, 76],
+	["aleksib", "Aleksib", "Aleksi Virolainen", "IGL", 2, "ELITE SERIES", "FI", 78, 94, 82],
+	["magisk", "Magisk", "Emil Reif", "SUPPORT", 2, "ELITE SERIES", "DK", 79, 85, 93],
+	["spinx", "Spinx", "Lotan Giladi", "LURKER", 2, "ELITE SERIES", "IL", 88, 91, 80],
+	["niko", "NiKo", "Nikola Kovač", "ENTRY", 3, "ICONS", "BA", 99, 87, 89],
+	["s1mple", "s1mple", "Oleksandr Kostyliev", "AWPER", 3, "ICONS", "UA", 99, 90, 87],
+	["fallen", "FalleN", "Gabriel Toledo", "IGL", 3, "ICONS", "BR", 87, 99, 91],
+	["twistzz", "Twistzz", "Russel Van Dulken", "SUPPORT", 3, "ICONS", "CA", 88, 92, 99],
+	["get_right", "GeT_RiGhT", "Christopher Alesund", "LURKER", 3, "ICONS", "SE", 94, 98, 88]
 ]
+
+const LEGACY_IDS = {
+	"spark": "yekindar", "scope": "syrson", "relay": "gla1ve", "patch": "rush", "drift": "jks",
+	"flint": "rain", "glass": "sh1ro", "tempo": "alex", "moss": "interz", "rune": "f1ku",
+	"raze": "xantares", "sight": "broky", "atlas": "siuhy", "echo": "perfecto", "veil": "ropz",
+	"fuse": "elige", "zero": "m0nesy", "vector": "karrigan", "haven": "xyp9x", "haze": "nertz",
+	"nova": "donk", "prism": "zywoo", "axiom": "aleksib", "pulse": "magisk", "ghost": "spinx",
+	"blaze": "niko", "oracle": "s1mple", "crown": "fallen", "saint": "twistzz", "onyx": "get_right"
+}
 
 static func cards() -> Array:
 	var result: Array = []
 	for p in PLAYERS:
 		result.append({"id": p[0], "handle": p[1], "name": p[2], "role": p[3], "rarity": p[4],
 			"club": p[5], "country": p[6], "aim": p[7], "sense": p[8], "utility": p[9],
-			"overall": roundi((p[7] + p[8] + p[9]) / 3.0)})
+			"overall": roundi((p[7] + p[8] + p[9]) / 3.0), "portrait": "res://assets/players/" + p[0] + ".jpg"})
 	return result
 
+static func canonical_id(id: String) -> String:
+	return LEGACY_IDS.get(id, id)
+
+static func map_label(result: Dictionary) -> String:
+	return str(result.get("map_name", "DE / DUST II"))
+
 static func card(id: String) -> Dictionary:
+	id = canonical_id(id)
 	for c in cards():
 		if c.id == id:
 			return c
