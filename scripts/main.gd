@@ -153,7 +153,7 @@ func _build_shell() -> void:
 	motion_control.add_theme_font_size_override("font_size", 11)
 	motion_control.toggled.connect(_set_reduced_motion)
 	side.add_child(motion_control)
-	side.add_child(U.label("PHASE SHIFT / v0.4.1", 9, U.MUTED))
+	side.add_child(U.label("PACK BACKS / v0.5.0", 9, U.MUTED))
 	var sidebar = U.panel(side, Color("140e24"), 16)
 	sidebar.custom_minimum_size.x = NAV_WIDTH
 	sidebar.size_flags_horizontal = Control.SIZE_FILL
@@ -756,7 +756,7 @@ func _show_pack(sealed: bool = false) -> void:
 	opening.use_3d = use_3d_collectibles
 	opening.sound_enabled = pack_sound
 	opening.finished.connect(_finish_pack)
-	opening.inspect_card.connect(_show_card)
+	opening.inspect_card.connect(func(id: String): _show_card(id, str(Game.data.pending_pack.pack_id)))
 	content.add_child(opening)
 
 func _finish_pack(destination: int) -> void:
@@ -939,10 +939,11 @@ func _complete_replay() -> void:
 			reward.add_child(U.button("See pack", func(): _show_pack_details(id)))
 			rewards.add_child(U.panel(reward, U.BG, 12))
 
-func _confirm_release(id: String) -> void:
+func _confirm_release(id: String, origin: String = "") -> void:
 	var c = C.card(id)
-	_confirm("Release one " + c.handle + "?", "You will receive %d CR. This copy leaves your collection. Any copy in your starting five remains protected." % C.QUICK_SELL[c.rarity], "Release card", func():
-		if Game.quick_sell(id):
+	origin = Game.release_origin(id, origin)
+	_confirm("Release one " + c.handle + "?", "Release one %s copy for %d CR. Your active copy stays protected." % [C.origin_label(origin), C.QUICK_SELL[c.rarity]], "Release card", func():
+		if Game.quick_sell(id, origin):
 			_close_modal()
 			navigate(3)
 			notify("Released one " + c.handle + ". Credits received.")
@@ -953,7 +954,8 @@ func _confirm_trade(key: String) -> void:
 	for offer in Game.offers():
 		if offer.key != key:
 			continue
-		_confirm("Make the exchange?", "Give one %s and receive one %s. This local AI trade is final. Your active lineup is protected." % [C.card(offer.give).handle, C.card(offer.receive).handle], "Confirm trade", func():
+		var give_origin = Game.release_origin(offer.give)
+		_confirm("Make the exchange?", "Give one %s (%s) and receive %s. The incoming pack origin is not recorded. Your active copy stays protected." % [C.card(offer.give).handle, C.origin_label(give_origin), C.card(offer.receive).handle], "Confirm trade", func():
 			if Game.trade(key):
 				_close_modal()
 				navigate(5)
@@ -1061,6 +1063,7 @@ func _ui_smoke() -> void:
 			return
 		await _capture("%02d_%s" % [index, PAGES[index].to_snake_case()])
 	# Filtering preserves typing focus; inspection is read-only and traps focus.
+	Game._grant_cards("yekindar", "elite", 1) # Explicit mixed-origin UI fixture.
 	navigate(3)
 	var search = body.find_child("CollectionSearch", true, false)
 	search.grab_focus()
@@ -1075,6 +1078,24 @@ func _ui_smoke() -> void:
 	inspect_button.pressed.emit()
 	await get_tree().process_frame
 	_smoke_dialog_layout("player profile")
+	var before_back_view = Game.data.duplicate(true)
+	_smoke_press("View card back")
+	var origin_selector = modal.find_child("CardOriginSelector", true, false)
+	var elite_index = -1
+	for i in range(origin_selector.item_count):
+		if origin_selector.get_item_metadata(i) == "elite":
+			elite_index = i
+	_smoke_expect(elite_index >= 0, "profile exposes owned pack variants")
+	if elite_index >= 0:
+		origin_selector.select(elite_index)
+		origin_selector.item_selected.emit(elite_index)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var inspected = modal.find_child("InspectedCard", true, false)
+	_smoke_expect(inspected.viewing_back and inspected.back_origins == ["elite"], "changing copy source shows its own pack back")
+	_smoke_expect(Game.data == before_back_view, "back inspection and source selection never change the club")
+	_smoke_action_visible("View card front")
+	await _capture("05_card_back")
 	nav_buttons[0].grab_focus()
 	var tab = InputEventKey.new()
 	tab.keycode = KEY_TAB
@@ -1292,6 +1313,13 @@ func _pack_smoke() -> void:
 		# A card can be inspected mid-opening and returns to the same reveal.
 		_smoke_press(C.card(secured.cards[0]).handle)
 		await get_tree().process_frame
+		var inspected = modal.find_child("InspectedCard", true, false)
+		_smoke_expect(inspected.back_origins == [id], "a revealed copy opens with its actual pack provenance")
+		var before_inspection = Game.data.duplicate(true)
+		_smoke_press("View card back")
+		await _wait_presentation(inspected, id + "_inspect_back")
+		_smoke_expect(inspected.viewing_back and Game.data == before_inspection, "animated back flip is visual only")
+		await _capture("%s_04_pack_back" % id)
 		_smoke_press("Back to opening   →")
 		_smoke_expect(Game.data.pending_pack.cards == secured.cards and Game.data.pending_pack.revealed == 5, "inspection returns to exact opening")
 		_smoke_press("Build your five   →")
@@ -1470,25 +1498,43 @@ func _reset_collection() -> void:
 	sort_mode = 0
 	navigate(3)
 
-func _show_card(id: String) -> void:
+func _show_card(id: String, origin: String = "", show_back: bool = false) -> void:
 	var card = C.card(id)
+	if origin.is_empty():
+		origin = Game.preferred_origin(id)
+	if origin.is_empty():
+		origin = "legacy"
+	var selected_origin = origin
 	var current = C.card(Game.data.squad[C.ROLES.find(card.role)])
-	var content = _modal_base(940, 600)
+	var content = _modal_base(980, 750)
 	content.add_child(U.section("PLAYER PROFILE", C.RARITIES[card.rarity] + " / ALPHA COLLECTION"))
-	var row = U.hbox(24)
+	var row = U.hbox(22)
+	var display = U.vbox(10)
+	display.custom_minimum_size.x = 260
+	display.size_flags_horizontal = Control.SIZE_FILL
 	var art = Collectible.new()
+	art.name = "InspectedCard"
 	art.mode = "card"
 	art.cards = [id]
+	art.back_origins = [origin]
+	art.viewing_back = show_back
 	art.revealed = 1
 	art.sealed = false
 	art.reduced_motion = reduced_motion
 	art.use_3d = use_3d_collectibles
 	art.custom_minimum_size = Vector2(260, 355)
-	art.size_flags_horizontal = Control.SIZE_FILL
-	row.add_child(art)
-	var profile = U.vbox(11)
-	profile.add_child(U.label(card.handle, 32, U.TEXT, true))
-	profile.add_child(U.label(card.name, 14, U.MUTED))
+	display.add_child(art)
+	var flip = U.button("View card front" if show_back else "View card back", func():
+		art.inspect_back(not art.viewing_back)
+		var control = display.find_child("FlipCard", true, false)
+		control.text = "View card front" if art.viewing_back else "View card back")
+	flip.name = "FlipCard"
+	display.add_child(flip)
+	display.add_child(U.paragraph("PACK BACK / " + C.origin_label(origin) if Game.copies(id) > 0 else "UNOWNED CARD / archive preview", 11))
+	row.add_child(display)
+	var profile = U.vbox(9)
+	profile.add_child(U.label(card.handle, 28, U.TEXT, true))
+	profile.add_child(U.label(card.name, 13, U.MUTED))
 	profile.add_child(U.badge(card.country + " / " + card.role + " / " + str(card.overall) + " OVR", C.COLORS[card.rarity]))
 	profile.add_child(U.label("YOUR STARTER: " + current.handle + " / " + str(current.overall) + " OVR", 11, U.MUTED, true))
 	var values = U.hbox(10)
@@ -1497,27 +1543,49 @@ func _show_card(id: String) -> void:
 		var own_value = int([card.aim, card.sense, card.utility][i])
 		var starter_value = int([current.aim, current.sense, current.utility][i])
 		var delta = own_value - starter_value
-		block.add_child(U.label(str(own_value), 30, U.TEXT, true))
+		block.add_child(U.label(str(own_value), 27, U.TEXT, true))
 		block.add_child(U.label(["AIM", "GAME SENSE", "UTILITY"][i], 10, U.MUTED, true))
 		block.add_child(U.label("Starter %d / %+d" % [starter_value, delta], 10, U.BLUE if delta > 0 else (U.RED if delta < 0 else U.MUTED)))
 		values.add_child(block)
-	profile.add_child(U.panel(values, U.BG, 12))
-	profile.add_child(U.paragraph("%s collection · %d copies owned%s" % [card.club.capitalize(), Game.copies(id), " · in your starting five" if id in Game.data.squad else ""], 12))
+	profile.add_child(U.panel(values, U.BG, 10))
+	profile.add_child(U.paragraph("%s collection · %d copies owned" % [card.club.capitalize(), Game.copies(id)], 12))
+	if Game.copies(id) > 0:
+		var sources = OptionButton.new()
+		sources.name = "CardOriginSelector"
+		sources.custom_minimum_size.y = 42
+		var index = 0
+		for source in C.CARD_ORIGINS:
+			var count = Game.copies_from(id, source)
+			if count <= 0:
+				continue
+			sources.add_item("%s / ×%d%s" % [C.origin_label(source), count, " / IN FIVE" if Game.squad_origin(id) == source else ""])
+			sources.set_item_metadata(index, source)
+			if source == origin:
+				sources.select(index)
+			index += 1
+		sources.item_selected.connect(func(item: int): _show_card(id, str(sources.get_item_metadata(item)), art.viewing_back))
+		profile.add_child(sources)
+		profile.add_child(U.paragraph("Pack origin changes the back. The player and ratings stay the same.", 11))
 	profile.add_child(U.paragraph("Authored alpha roles and ratings. Collection labels are not current player organizations.", 11))
 	if not Game.data.pending_pack.is_empty():
 		profile.add_child(U.button("Back to opening   →", func(): _show_pack(false), true))
-	elif Game.copies(id) > 0 and id not in Game.data.squad:
-		var equip = U.button("Add to lineup  ↑", func():
-			if Game.equip(id):
+	elif Game.copies(id) > 0:
+		var active_copy = id in Game.data.squad and Game.squad_origin(id) == origin
+		var equip_label = "In starting five" if active_copy else ("Use this copy in lineup" if id in Game.data.squad else "Add to lineup  ↑")
+		var equip = U.button(equip_label, func():
+			if Game.equip(id, selected_origin):
 				_close_modal()
 				navigate(page)
 				notify(card.handle + " joined your starting five.")
 			else:
 				_action_failed(), true)
-		equip.disabled = _transactions_locked()
-		equip.tooltip_text = _lock_reason() if equip.disabled else "Replaces " + current.handle + "; both cards stay in your collection."
+		equip.disabled = active_copy or _transactions_locked()
 		profile.add_child(equip)
-	elif Game.copies(id) == 0:
+		var release = U.button("Release this copy · %d CR" % C.QUICK_SELL[card.rarity], func(): _confirm_release(id, selected_origin))
+		release.disabled = not Game.can_release(id, origin) or _transactions_locked()
+		release.tooltip_text = "One copy of your active player and its chosen pack origin stays protected."
+		profile.add_child(release)
+	else:
 		profile.add_child(U.badge("NOT YET COLLECTED", U.MUTED))
 	row.add_child(profile)
 	content.add_child(row)

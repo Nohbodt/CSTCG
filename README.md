@@ -6,7 +6,7 @@ For portable builds and a short test walkthrough, see [TESTING.md](TESTING.md). 
 
 **Open packs → build a five-player lineup → choose tactics → play the circuit → earn your next signing.**
 
-Alpha 0.4.1 adds a **slow progressive tear, glowing seam, spark showers and an explosive card fan**, with a longer buildup and richer effects for Elite. See [the current effects notes](docs/OPENING_EFFECTS_0_4_1.md). The [Phase Shift update](docs/ALPHA_0_4.md), [earlier menus](docs/UI_PASS_0_3.md) and [Dust II match rules](docs/ALPHA_0_2.md) remain documented.
+Alpha 0.5 adds **pack-specific card backs, per-copy origin tracking, an animated front/back inspector and source-aware lineup/release controls**. See [the current build notes](docs/CARD_BACKS_0_5.md). The [slow tear and explosive opening](docs/OPENING_EFFECTS_0_4_1.md), [Phase Shift update](docs/ALPHA_0_4.md) and [Dust II match rules](docs/ALPHA_0_2.md) remain included. HLTV headshots await the saved environment network-access update; this build retains the neutral identity art.
 
 The next launch collection is specified in the [CSTCG Series 1 design kit](docs/series_1/DESIGN_SPEC.md): Alpha, Bravo, Elite and Beta Event, each with a 50-card pool. Browse the [interactive 90-card catalogue](docs/series_1/index.html) or the [printable lookbook](docs/series_1/CSTCG_Series_1_Design_Lookbook.pdf). These are content/art specifications; the playable alpha catalogue is unchanged.
 
@@ -77,7 +77,7 @@ Use `--ephemeral` for experiments without loading or changing your saved club. N
 
 ## Scope
 
-This is an **offline alpha**. The played match runs ten agents, combat, equipment and bomb objectives on Dust II; the skip path retains the aggregate round simulator with 50% credits/XP. See [alpha 0.2](docs/ALPHA_0_2.md) for mechanics and limits. Trades use local AI managers. Online trading, paid currency, ranked services and licensed player imagery remain future work. Real names use custom game roles/ratings and neutral portrait placeholders. Card/pack graphics are original; map geometry is the user-supplied STL. This project is not affiliated with Valve or the players. Native Windows hardware testing still relies on tester feedback.
+This is an **offline alpha**. The played match runs ten agents, combat, equipment and bomb objectives on Dust II; the skip path retains the aggregate round simulator with 50% credits/XP. See [alpha 0.2](docs/ALPHA_0_2.md) for mechanics and limits. Trades use local AI managers. Online trading, paid currency and ranked services remain future work. HLTV portrait preparation awaits environment network access and the jersey-edit review. Real names use custom game roles/ratings and neutral portrait placeholders. Card/pack graphics are original; map geometry is the user-supplied STL. This project is not affiliated with Valve or the players. Native Windows hardware testing still relies on tester feedback.
 
 The supplied 26-page [v2.0 master GDD](docs/reference/ESPORTS_CSTCG_Master_GDD_v2_0.pdf) has now been reconciled with the prototype into v3.0. The original is preserved unchanged. The older conversation link itself was unavailable; this merge uses the actual supplied PDF.
 

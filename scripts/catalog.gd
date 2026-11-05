@@ -5,6 +5,11 @@ const ROLES = ["ENTRY", "AWPER", "IGL", "SUPPORT", "LURKER"]
 const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
 const COLORS = [Color("a2adc6"), Color("53aeff"), Color("a66bff"), Color("eee4ff")]
 const QUICK_SELL = [8, 20, 55, 150]
+const CARD_ORIGINS = ["starter", "contender", "elite", "trade", "legacy"]
+const ORIGIN_LABELS = {"starter": "Foundation / starter", "contender": "Contender", "elite": "Elite Circuit", "trade": "Trade / pack not recorded", "legacy": "Archive / pack not recorded"}
+
+static func origin_label(origin: String) -> String:
+	return ORIGIN_LABELS.get(origin, "Origin not recorded")
 const MAPS = ["DE / DUST II"]
 const MAP_ROLES = ["SUPPORT"]
 const LEGACY_MAPS = ["DE / OVERPASS", "DE / MIRAGE", "DE / ANCIENT"]
@@ -68,7 +73,7 @@ static func cards() -> Array:
 	for p in PLAYERS:
 		result.append({"id": p[0], "handle": p[1], "name": p[2], "role": p[3], "rarity": p[4],
 			"club": p[5], "country": p[6], "aim": p[7], "sense": p[8], "utility": p[9],
-			"overall": roundi((p[7] + p[8] + p[9]) / 3.0), "portrait": "res://assets/players/" + p[0] + ".jpg"})
+			"overall": roundi((p[7] + p[8] + p[9]) / 3.0), "portrait": "res://assets/players/" + p[0] + ".png"})
 	return result
 
 static func canonical_id(id: String) -> String:

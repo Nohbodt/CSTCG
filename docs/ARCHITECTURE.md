@@ -14,6 +14,7 @@
 | `scripts/presentation/pack_opening.gd` | Opening controls and presentation synchronization against already committed contents |
 | `scripts/presentation/*.gdshader` | GL Compatibility foil/interference treatments; printed text protected from effects |
 | `scripts/card_art.gd`, `pack_art.gd`, `arena_art.gd` | Optional photographic cards with neutral fallback, printed pack art, rendered Dust II menu artwork |
+| `scripts/card_back_art.gd` | Pack-specific back geometry/typography shared by openings, 3D inspection and 2D fallback |
 | `tools/capture_menu_map.gd`, `assets/ui/dust2_preview.png` | Reproducible menu thumbnail captured from the supplied 3D map |
 | `scripts/spatial/dust_world.gd` | Uploaded map, shared render/collision faces, derived navigation, physical movement and ray queries |
 | `scripts/spatial/spatial_match_sim.gd` | Fixed-tick causal ten-agent match engine; combat, utility, bomb, equipment and MR12/MR3 |
@@ -38,6 +39,10 @@ Pack art and card faces are rendered once into local textures, with printed valu
 
 ## Transaction boundaries
 
+Alpha 0.5 adds schema-3 `card_origins` quantities per definition/source and `squad_origins` for the active copies. Aggregate card counts remain compatible with existing presentation/economy code. `_valid_origins` requires ledger sums to match inventory and the lineup's chosen sources to exist. Grant/removal helpers update both counts inside the same existing snapshot/commit boundary. Release and equip can select a source explicitly. AI receipts without origin information use a labelled unknown source rather than an invented pack. Card backs never modify the profile or simulation inputs.
+
+Schema-2 migration preserves the original as `.before-card-backs.bak`, assigns old unproven sources to the archive, and recovers exactly the known copies in an unfinished opening. Schema-1 still runs canonical-identity migration first and preserves its original `.before-alpha2.bak` bytes. Both pending reveals and causal match checkpoints survive. The source getter returns copies of provenance metadata so inspector filtering cannot mutate it.
+
 - **Acquire pack:** subtract its price and add one owned pack in the same save.
 - **Open pack:** consume one owned pack, choose all five results, update quantities, and record the pending reveal in one save.
 - **Reveal:** only advance persisted presentation state; do not generate new cards.
@@ -49,7 +54,7 @@ Pack art and card faces are rendered once into local textures, with printed valu
 
 All mutations take a deep state snapshot before attempting the local file write. On failure, restore that snapshot. RNG state itself is not restored; no result is exposed when a commit fails. This is acceptable for a local offline prototype and is not a protocol for online pack generation.
 
-Saves use `FileAccess` and `DirAccess` with a `.tmp` write-and-rename. Godot JSON decodes numbers as floats, so integral counters are normalized on load. Schema checks verify the inventory, five role slots, pending reveal, active-match snapshots/checkpoints, and report structures before presentation. Schema 1 IDs migrate one-for-one to real identities, preserving the exact original save as a backup before schema 2 is written. There is no local encryption, tamper protection, transaction server, or cloud sync.
+Saves use `FileAccess` and `DirAccess` with a `.tmp` write-and-rename. Godot JSON decodes numbers as floats, so integral counters are normalized on load. Schema checks verify the inventory, five role slots, pending reveal, active-match snapshots/checkpoints, and report structures before presentation. Schema 1 IDs migrate one-for-one to real identities, preserving the exact original save as a backup; schema-2 provenance migration then prepares the schema-3 state. There is no local encryption, tamper protection, transaction server, or cloud sync.
 
 ## Tests and diagnostics
 

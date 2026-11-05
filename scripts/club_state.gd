@@ -30,12 +30,12 @@ func _ready() -> void:
 			save_club()
 
 func new_club() -> void:
-	data = {"version": 2, "credits": 800, "matches": 0, "wins": 0, "xp": 0,
-		"cards": {}, "squad": STARTERS.duplicate(), "packs": {"contender": 2, "elite": 0},
+	data = {"version": 3, "credits": 800, "matches": 0, "wins": 0, "xp": 0,
+		"cards": {}, "card_origins": {}, "squad_origins": ["starter", "starter", "starter", "starter", "starter"], "squad": STARTERS.duplicate(), "packs": {"contender": 2, "elite": 0},
 		"pending_pack": {}, "active_match": {}, "history": [], "used_trades": [], "map": 0, "tactic": 0}
 	for id in STARTERS:
-		data.cards[id] = 1
-	data.cards.yekindar = 2
+		_grant_cards(id, "starter", 1)
+	_grant_cards("yekindar", "starter", 1)
 
 func _valid_save(candidate: Dictionary) -> bool:
 	for key in ["version", "credits", "matches", "wins", "xp", "map", "tactic"]:
@@ -43,14 +43,14 @@ func _valid_save(candidate: Dictionary) -> bool:
 			return false
 		if candidate[key] < 0 or float(candidate[key]) != floorf(float(candidate[key])):
 			return false
-	if candidate.version != 2 or candidate.credits < 0 or candidate.matches < 0 or candidate.wins < 0 or candidate.wins > candidate.matches:
+	if candidate.version != 3 or candidate.credits < 0 or candidate.matches < 0 or candidate.wins < 0 or candidate.wins > candidate.matches:
 		return false
 	if candidate.map < 0 or candidate.map >= C.MAPS.size() or candidate.tactic < 0 or candidate.tactic >= C.TACTICS.size():
 		return false
-	for key in ["cards", "packs", "pending_pack", "active_match"]:
+	for key in ["cards", "card_origins", "packs", "pending_pack", "active_match"]:
 		if not candidate.get(key) is Dictionary:
 			return false
-	for key in ["squad", "history", "used_trades"]:
+	for key in ["squad", "squad_origins", "history", "used_trades"]:
 		if not candidate.get(key) is Array:
 			return false
 	if candidate.history.size() > 12:
@@ -88,6 +88,8 @@ func _valid_save(candidate: Dictionary) -> bool:
 			return false
 		if float(candidate.packs[id]) != floorf(float(candidate.packs[id])):
 			return false
+	if not _valid_origins(candidate):
+		return false
 	var pending = candidate.pending_pack
 	if not pending.is_empty():
 		if not C.PACKS.has(pending.get("pack_id", "")) or not pending.get("cards") is Array or not pending.get("new_flags") is Array:
@@ -104,6 +106,32 @@ func _valid_save(candidate: Dictionary) -> bool:
 		for id in pending.cards:
 			if not id is String or C.card(id).is_empty() or candidate.cards.get(id, 0) < 1:
 				return false
+			if candidate.card_origins.get(id, {}).get(pending.pack_id, 0) < pending.cards.count(id):
+				return false
+	return true
+
+func _valid_origins(candidate: Dictionary) -> bool:
+	if candidate.squad_origins.size() != 5:
+		return false
+	for id in candidate.card_origins:
+		if not candidate.cards.has(id) or not candidate.card_origins[id] is Dictionary:
+			return false
+	for id in candidate.cards:
+		var bucket = candidate.card_origins.get(id, {})
+		if not bucket is Dictionary:
+			return false
+		var total = 0
+		for origin in bucket:
+			var count = bucket[origin]
+			if origin not in C.CARD_ORIGINS or not (count is int or count is float) or count < 1 or float(count) != floorf(float(count)):
+				return false
+			total += int(count)
+		if total != int(candidate.cards[id]):
+			return false
+	for i in range(5):
+		var origin = candidate.squad_origins[i]
+		if origin not in C.CARD_ORIGINS or candidate.card_origins.get(candidate.squad[i], {}).get(origin, 0) < 1:
+			return false
 	return true
 
 func _valid_active_match(active: Dictionary) -> bool:
@@ -235,17 +263,21 @@ func load_club() -> bool:
 	var json = JSON.new()
 	var error = json.parse(FileAccess.get_file_as_string(save_path))
 	var parsed = _normalize_numbers(json.data)
-	var migrated = false
+	var migrated_from = 0
 	if error == OK and parsed is Dictionary and parsed.get("version") == 1:
 		parsed = _migrate_v1(parsed)
-		migrated = true
+		migrated_from = 1
+	if error == OK and parsed is Dictionary and parsed.get("version") == 2:
+		if migrated_from == 0:
+			migrated_from = 2
+		parsed = _migrate_v2(parsed)
 	if error != OK or not parsed is Dictionary or not _valid_save(parsed):
 		last_error = "The local save could not be read. It was preserved; this session starts fresh without saving."
 		save_enabled = false
 		return false
 	data = parsed
-	if migrated and save_enabled:
-		var backup = save_path + ".before-alpha2.bak"
+	if migrated_from > 0 and save_enabled:
+		var backup = save_path + (".before-alpha2.bak" if migrated_from == 1 else ".before-card-backs.bak")
 		if not FileAccess.file_exists(backup) and DirAccess.copy_absolute(save_path, backup) != OK:
 			last_error = "The old club was loaded, but its migration backup could not be saved. This session is unsaved."
 			save_enabled = false
@@ -286,6 +318,36 @@ func _migrate_v1(old: Dictionary) -> Dictionary:
 	migrated["active_match"] = {}
 	migrated.map = 0
 	migrated.version = 2
+	return migrated
+
+func _migrate_v2(old: Dictionary) -> Dictionary:
+	if not old.get("cards") is Dictionary or not old.get("squad") is Array:
+		return old
+	var migrated = old.duplicate(true)
+	migrated["card_origins"] = {}
+	migrated["squad_origins"] = []
+	for id in old.cards:
+		var count = old.cards[id]
+		if not (count is int or count is float) or count < 0 or float(count) != floorf(float(count)):
+			return old
+		migrated.card_origins[id] = {"legacy": int(count)} if count > 0 else {}
+	for id in old.squad:
+		migrated.squad_origins.append("legacy")
+	# An unfinished pack is the one source old saves can prove exactly.
+	var pending = old.get("pending_pack", {})
+	if not pending is Dictionary:
+		return old
+	if not pending.is_empty():
+		if not pending.get("cards") is Array or not C.PACKS.has(pending.get("pack_id", "")):
+			return old
+		for id in pending.cards:
+			if not migrated.card_origins.has(id) or migrated.card_origins[id].get("legacy", 0) < 1:
+				return old
+			migrated.card_origins[id].legacy -= 1
+			if migrated.card_origins[id].legacy == 0:
+				migrated.card_origins[id].erase("legacy")
+			migrated.card_origins[id][pending.pack_id] = migrated.card_origins[id].get(pending.pack_id, 0) + 1
+	migrated.version = 3
 	return migrated
 
 func _normalize_numbers(value):
@@ -332,6 +394,44 @@ func _commit(previous: Dictionary) -> bool:
 
 func copies(id: String) -> int:
 	return int(data.cards.get(C.canonical_id(id), 0))
+
+func copies_from(id: String, origin: String) -> int:
+	return int(data.card_origins.get(C.canonical_id(id), {}).get(origin, 0))
+
+func origins_for(id: String) -> Dictionary:
+	return data.card_origins.get(C.canonical_id(id), {}).duplicate()
+
+func squad_origin(id: String) -> String:
+	var slot = data.squad.find(C.canonical_id(id))
+	return str(data.squad_origins[slot]) if slot >= 0 else ""
+
+func preferred_origin(id: String) -> String:
+	var active = squad_origin(id)
+	if not active.is_empty():
+		return active
+	for origin in C.CARD_ORIGINS:
+		if copies_from(id, origin) > 0:
+			return origin
+	return ""
+
+func release_origin(id: String, requested: String = "") -> String:
+	for origin in ([requested] if not requested.is_empty() else ["legacy", "trade", "starter", "contender", "elite"]):
+		if copies_from(id, origin) > (1 if squad_origin(id) == origin else 0):
+			return origin
+	return ""
+
+func _grant_cards(id: String, origin: String, count: int) -> void:
+	id = C.canonical_id(id)
+	data.cards[id] = copies(id) + count
+	if not data.card_origins.has(id):
+		data.card_origins[id] = {}
+	data.card_origins[id][origin] = copies_from(id, origin) + count
+
+func _remove_copy(id: String, origin: String) -> void:
+	data.cards[id] -= 1
+	data.card_origins[id][origin] -= 1
+	if data.card_origins[id][origin] == 0:
+		data.card_origins[id].erase(origin)
 
 func unique_cards() -> int:
 	var count = 0
@@ -385,7 +485,7 @@ func open_pack(pack_id: String) -> bool:
 		var id = C.roll_card(pack.last_weights if slot == 4 else pack.base_weights, rng)
 		new_flags.append(copies(id) == 0)
 		pulled.append(id)
-		data.cards[id] = copies(id) + 1
+		_grant_cards(id, pack_id, 1)
 	data.packs[pack_id] -= 1
 	# Cards and the pending reveal are saved together BEFORE the presentation.
 	data.pending_pack = {"pack_id": pack_id, "cards": pulled, "new_flags": new_flags, "revealed": 0}
@@ -405,25 +505,35 @@ func finish_pack() -> bool:
 	data.pending_pack = {}
 	return _commit(previous)
 
-func equip(id: String) -> bool:
+func equip(id: String, origin: String = "") -> bool:
 	id = C.canonical_id(id)
-	var c = C.card(id)
-	if c.is_empty() or copies(id) < 1 or id in data.squad or not data.pending_pack.is_empty() or has_active_match():
+	var card = C.card(id)
+	if card.is_empty() or copies(id) < 1 or not data.pending_pack.is_empty() or has_active_match():
+		return false
+	if origin.is_empty():
+		if id in data.squad:
+			return false
+		origin = preferred_origin(id)
+	if copies_from(id, origin) < 1:
+		return false
+	var slot = C.ROLES.find(card.role)
+	if data.squad[slot] == id and data.squad_origins[slot] == origin:
 		return false
 	var previous = data.duplicate(true)
-	data.squad[C.ROLES.find(c.role)] = id
+	data.squad[slot] = id
+	data.squad_origins[slot] = origin
 	return _commit(previous)
 
-func can_release(id: String) -> bool:
-	id = C.canonical_id(id)
-	return not has_active_match() and copies(id) > (1 if id in data.squad else 0)
+func can_release(id: String, origin: String = "") -> bool:
+	return not has_active_match() and not release_origin(id, origin).is_empty()
 
-func quick_sell(id: String) -> bool:
+func quick_sell(id: String, origin: String = "") -> bool:
 	id = C.canonical_id(id)
-	if not can_release(id) or not data.pending_pack.is_empty():
+	origin = release_origin(id, origin)
+	if origin.is_empty() or not can_release(id, origin) or not data.pending_pack.is_empty():
 		return false
 	var previous = data.duplicate(true)
-	data.cards[id] -= 1
+	_remove_copy(id, origin)
 	data.credits += C.QUICK_SELL[C.card(id).rarity]
 	return _commit(previous)
 
@@ -446,8 +556,8 @@ func trade(key: String) -> bool:
 	for offer in offers():
 		if offer.key == key and not offer.used and can_release(offer.give):
 			var previous = data.duplicate(true)
-			data.cards[offer.give] -= 1
-			data.cards[offer.receive] = copies(offer.receive) + 1
+			_remove_copy(offer.give, release_origin(offer.give))
+			_grant_cards(offer.receive, "trade", 1)
 			data.used_trades.append(key)
 			return _commit(previous)
 	return false

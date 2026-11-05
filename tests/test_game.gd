@@ -27,6 +27,7 @@ func _run() -> void:
 	_catalog()
 	_packs()
 	_lineup_and_trades()
+	_card_provenance()
 	_simulation()
 	_progression()
 	_persistence()
@@ -99,13 +100,13 @@ func _lineup_and_trades() -> void:
 	check(game.quick_sell("yekindar") and game.copies("yekindar") == 1 and game.data.credits == 808, "spare active card can be released at correct price")
 	check(not game.quick_sell("yekindar"), "last remaining active copy is protected")
 	check(not game.equip("donk"), "unowned player cannot be equipped")
-	game.data.cards.rain = 1
+	game._grant_cards("rain", "trade", 1)
 	check(game.equip("rain") and game.data.squad[0] == "rain", "equipping replaces matching role")
 	check(game.copies("yekindar") == 1 and game.copies("rain") == 1, "substitution preserves collection")
 	check(not game.equip("rain"), "cannot insert same card twice")
 	check(game.equip("yekindar"), "original player can be restored")
 	check(not game.trade(game.offers()[0].key), "cannot trade last active copy")
-	game.data.cards.yekindar = 2
+	game._grant_cards("yekindar", "legacy", 1)
 	var key = game.offers()[0].key
 	var count = game.total_cards()
 	check(game.trade(key), "valid AI trade executes")
@@ -114,6 +115,83 @@ func _lineup_and_trades() -> void:
 	game.data.matches = 4
 	check(game.offers()[0].key != key and not game.offers()[0].used, "trade epoch refreshes after four matches")
 	check(not game.set_strategy(-1, 0) and not game.set_strategy(0, 3), "invalid strategy rejected")
+	game.free()
+
+func _card_provenance() -> void:
+	var game = fresh()
+	check(game.data.version == 3 and game.copies_from("yekindar", "starter") == 2, "new club records starter-copy provenance")
+	check(game._valid_save(game.data), "new origin ledger validates")
+	game._grant_cards("niko", "contender", 1)
+	game._grant_cards("niko", "elite", 1)
+	check(game.copies("niko") == 2 and game.origins_for("niko").size() == 2, "one player can have two real pack-back variants")
+	check(game.equip("niko", "elite"), "a specific pack copy can be equipped")
+	var rating = game.team_rating()
+	check(not game.can_release("niko", "elite") and game.can_release("niko", "contender"), "reserve protects the exact active origin rather than another copy")
+	check(game.equip("niko", "contender") and game.team_rating() == rating, "changing back variant cannot change player strength")
+	check(not game.quick_sell("niko", "contender"), "cannot release the active origin's last copy")
+	var before = game.data.duplicate(true)
+	game.save_enabled = true
+	game.save_path = "user://missing-provenance-directory/club.json"
+	check(not game.quick_sell("niko", "elite") and game.data == before, "failed save rolls back quantities and origin ledger together")
+	game.save_enabled = false
+	check(game.quick_sell("niko", "elite") and game.copies_from("niko", "contender") == 1 and game.copies_from("niko", "elite") == 0, "release consumes only the selected spare origin")
+	check(game.trade(game.offers()[0].key) and game.copies_from("rain", "trade") == 1, "AI trade without source provenance remains explicitly unrecorded")
+	game.open_pack("contender")
+	var pending = game.data.pending_pack.duplicate(true)
+	for id in pending.cards:
+		check(game.copies_from(id, "contender") >= pending.cards.count(id), "every pending copy retains its proven opening pack")
+	check(game._valid_save(game.data), "ledger stays consistent across collection transactions and pending duplicates")
+	var malformed = game.data.duplicate(true)
+	malformed.card_origins.niko.contender += 1
+	check(not game._valid_save(malformed), "origin totals must equal inventory quantities")
+	malformed = game.data.duplicate(true)
+	malformed.squad_origins[0] = "elite"
+	check(not game._valid_save(malformed), "lineup cannot reserve a nonexistent origin")
+	malformed = game.data.duplicate(true)
+	malformed.card_origins.niko = {"invented-pack": 1}
+	check(not game._valid_save(malformed), "unknown pack origins are rejected")
+	# Older schemas never tracked the pack of completed openings. Keep them
+	# unknown; recover only the provable cards in the unfinished opening.
+	var old = game.data.duplicate(true)
+	old.version = 2
+	old.erase("card_origins")
+	old.erase("squad_origins")
+	var original = JSON.stringify(old)
+	game.save_path = "user://test-fixtures/provenance-migration.json"
+	DirAccess.make_dir_recursive_absolute("user://test-fixtures")
+	var backup = game.save_path + ".before-card-backs.bak"
+	if FileAccess.file_exists(backup):
+		DirAccess.remove_absolute(backup)
+	var file = FileAccess.open(game.save_path, FileAccess.WRITE)
+	file.store_string(original)
+	file.close()
+	game.save_enabled = true
+	check(game.load_club() and game.data.version == 3, "schema 2 migrates to per-pack provenance")
+	check(FileAccess.get_file_as_string(backup) == original, "card-back migration backs up exact original bytes")
+	check(game.data.cards == old.cards and game.data.pending_pack == pending, "migration preserves inventory and every pending result")
+	check(game.copies_from("niko", "legacy") >= 1 and game.squad_origin("niko") == "legacy", "migration does not invent an old card's pack")
+	for id in pending.cards:
+		check(game.copies_from(id, "contender") == pending.cards.count(id), "migration recovers exact pending-pack sources")
+	var migrated = game.data.duplicate(true)
+	check(game.load_club() and game.data == migrated, "origin ledger and active copies survive JSON roundtrip")
+	game.reveal_cards(true)
+	game.finish_pack()
+	check(game.begin_spatial_match(), "migration fixture can start a played match")
+	var old_match = game.data.duplicate(true)
+	old_match.version = 2
+	old_match.erase("card_origins")
+	old_match.erase("squad_origins")
+	for group in ["own_cards", "enemy_cards"]:
+		for profile in old_match.active_match.snapshot[group]:
+			profile.portrait = str(profile.portrait).replace(".png", ".jpg")
+	var frozen_match = old_match.active_match.duplicate(true)
+	file = FileAccess.open(game.save_path, FileAccess.WRITE)
+	file.store_string(JSON.stringify(old_match))
+	file.close()
+	DirAccess.remove_absolute(backup)
+	check(game.load_club() and game.data.active_match == frozen_match, "schema-2 played fixture and frozen portrait paths survive provenance migration unchanged")
+	DirAccess.remove_absolute(game.save_path)
+	DirAccess.remove_absolute(backup)
 	game.free()
 
 func _simulation() -> void:
@@ -225,6 +303,8 @@ func _migration_and_pending_match() -> void:
 	for id in C.LEGACY_IDS:
 		reverse[C.LEGACY_IDS[id]] = id
 	old.version = 1
+	old.erase("card_origins")
+	old.erase("squad_origins")
 	old.erase("active_match")
 	old.map = 1
 	old.cards = {}
@@ -255,7 +335,7 @@ func _migration_and_pending_match() -> void:
 	check(game.data.pending_pack == expected.pending_pack, "partly revealed pack preserves cards, flags and reveal position")
 	check(game.data.credits == expected.credits and game.data.xp == expected.xp and game.data.matches == expected.matches, "migration preserves progression")
 	check(game.data.history[0].mvp == expected.history[0].mvp and game.data.history[0].map_name == C.LEGACY_MAPS[1], "history retains its original map and canonical MVP")
-	check(game.data.version == 2 and game.data.map == 0 and game.load_club(), "migrated schema survives subsequent load")
+	check(game.data.version == 3 and game.data.map == 0 and game.load_club(), "migrated schema survives subsequent load")
 	game.reveal_cards(true)
 	game.finish_pack()
 	check(game.begin_spatial_match(), "played fixture saved before scene transition")

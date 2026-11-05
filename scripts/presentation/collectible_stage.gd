@@ -9,6 +9,7 @@ const U = preload("res://scripts/ui.gd")
 const C = preload("res://scripts/catalog.gd")
 const Pack = preload("res://scripts/pack_art.gd")
 const Card = preload("res://scripts/card_art.gd")
+const Back = preload("res://scripts/card_back_art.gd")
 const FOIL = preload("res://scripts/presentation/foil.gdshader")
 const PRINT = preload("res://scripts/presentation/printed_foil.gdshader")
 const FX = preload("res://scripts/presentation/opening_effects.gd")
@@ -17,6 +18,8 @@ var mode = "pack" # pack, opening, card
 var pack_id = "contender"
 var cards: Array = []
 var new_flags: Array = []
+var back_origins: Array = []
+var viewing_back = false
 var revealed = 0
 var sealed = true
 var reduced_motion = false
@@ -68,6 +71,9 @@ func _ready() -> void:
 	flair = int(C.PACKS[pack_id].get("flair", 0))
 	if mode == "card":
 		flair = int(C.card(cards[0]).rarity)
+	if back_origins.is_empty():
+		for id in cards:
+			back_origins.append(pack_id if mode == "opening" else "legacy")
 	tint = C.PACKS[pack_id].color if mode != "card" else C.COLORS[C.card(cards[0]).rarity]
 	_build()
 	resized.connect(_resize_view)
@@ -141,7 +147,7 @@ func _build() -> void:
 		_set_fan()
 	if mode == "card":
 		card_roots[0].scale = Vector3.ONE * 1.15
-		card_roots[0].rotation_degrees = Vector3(-3, -9, -2)
+		card_roots[0].rotation_degrees = Vector3(-3, 171 if viewing_back else -9, -2)
 	_resize_view()
 	queue_redraw()
 
@@ -181,7 +187,7 @@ func _printed_texture(art: Control, extent: Vector2i) -> SubViewport:
 	canvas.add_child(art)
 	return canvas
 
-func _print(parent: Node3D, texture: Texture2D, extent: Vector2, z: float) -> MeshInstance3D:
+func _print(parent: Node3D, texture: Texture2D, extent: Vector2, z: float, protect_portrait: bool = false) -> MeshInstance3D:
 	var front = MeshInstance3D.new()
 	var quad = QuadMesh.new()
 	quad.size = extent
@@ -192,6 +198,7 @@ func _print(parent: Node3D, texture: Texture2D, extent: Vector2, z: float) -> Me
 	material.set_shader_parameter("print_texture", texture)
 	material.set_shader_parameter("tint", tint)
 	material.set_shader_parameter("strength", 0.13 + flair * 0.065)
+	material.set_shader_parameter("portrait_protection", 1.0 if protect_portrait else 0.0)
 	printed_materials.append(material)
 	front.material_override = material
 	parent.add_child(front)
@@ -251,10 +258,14 @@ func _build_pack() -> void:
 func _build_cards() -> void:
 	if mode == "pack":
 		return
-	var back = Card.new()
-	back.face_down = true
-	var back_texture = _printed_texture(back, Vector2i(380, 580)).get_texture()
+	var back_textures: Dictionary = {}
 	for i in range(cards.size()):
+		var origin = str(back_origins[i])
+		if not back_textures.has(origin):
+			var back = Card.new()
+			back.face_down = true
+			back.back_origin = origin
+			back_textures[origin] = _printed_texture(back, Vector2i(380, 580)).get_texture()
 		var node = Node3D.new()
 		rig.add_child(node)
 		card_roots.append(node)
@@ -264,8 +275,9 @@ func _build_cards() -> void:
 		art.card = C.card(cards[i])
 		art.fresh = new_flags[i] if i < new_flags.size() else false
 		var texture = _printed_texture(art, Vector2i(380, 580)).get_texture()
-		_print(node, texture, Vector2(1.52, 2.32), 0.031)
-		var rear = _print(node, back_texture, Vector2(1.52, 2.32), -0.031)
+		_print(node, texture, Vector2(1.52, 2.32), 0.031, true)
+		var rear = _print(node, back_textures[origin], Vector2(1.52, 2.32), -0.031)
+		rear.material_override.set_shader_parameter("tint", Back.style(origin).color)
 		rear.rotation.y = PI
 		node.rotation.y = 0 if i < revealed else PI
 		node.visible = mode == "card" or not sealed
@@ -295,7 +307,8 @@ func _build_fallback() -> void:
 			var art = Card.new()
 			art.compact = true
 			art.card = C.card(cards[i])
-			art.face_down = i >= revealed
+			art.face_down = viewing_back if mode == "card" else i >= revealed
+			art.back_origin = str(back_origins[i])
 			art.fresh = new_flags[i] if i < new_flags.size() else false
 			row.add_child(art)
 
@@ -519,7 +532,34 @@ func skip_animation() -> void:
 		active_tween.kill()
 	if is_instance_valid(audio):
 		audio.stop()
+	if phase == "inspecting":
+		_finish_inspection()
+		return
 	_finish_animation()
+
+func inspect_back(value: bool) -> void:
+	if mode != "card":
+		return
+	viewing_back = value
+	if active_tween:
+		active_tween.kill()
+	phase = "inspecting"
+	static_frames = 4
+	if reduced_motion or card_roots.is_empty():
+		_finish_inspection()
+		return
+	active_tween = create_tween()
+	active_tween.tween_property(card_roots[0], "rotation_degrees:y", 171.0 if value else -9.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	active_tween.tween_callback(_finish_inspection)
+
+func _finish_inspection() -> void:
+	if not is_inside_tree():
+		return
+	if not card_roots.is_empty():
+		card_roots[0].rotation_degrees.y = 171 if viewing_back else -9
+	phase = "idle"
+	static_frames = 4
+	_refresh_fallback()
 
 func _finish_animation() -> void:
 	if not is_inside_tree() or phase == "idle":

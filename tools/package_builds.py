@@ -24,11 +24,11 @@ def package(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     version = subprocess.check_output(["godot", "--version"], text=True).strip()
     info = (
-        "CSTCG / Club Circuit — alpha 0.4.1 / slow tear and burst effects\n"
+        "CSTCG / Club Circuit — alpha 0.5 / pack-origin card backs\n"
         f"Source commit: {commit}\n"
         f"Engine: {version}\n"
         f"Packaged (UTC): {datetime.now(timezone.utc).isoformat()}\n"
-        "Source state/migration, two-size menu UI, premium pack animation/resume, causal matches, and 12 physical map routes passed.\n"
+        "Source origin-ledger/migration, two-size menu UI, pack backs/animation/resume, causal matches, and 12 map routes passed.\n"
         "Playable catalogue: 30 players / 2 alpha pack products. Series 1 remains a design kit.\n"
         "Linux executable and Windows PCK manager/map/live-match checks passed.\n"
         "Native Windows hardware execution was not performed.\n"

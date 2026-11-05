@@ -3,11 +3,13 @@ extends Control
 
 const C = preload("res://scripts/catalog.gd")
 const U = preload("res://scripts/ui.gd")
+const Back = preload("res://scripts/card_back_art.gd")
 var card: Dictionary = {}
 var face_down = false
 var compact = false
 var fresh = false
 var selected = false
+var back_origin = "legacy"
 
 func _ready() -> void:
 	custom_minimum_size = custom_minimum_size.max(Vector2(120, 200) if compact else Vector2(175, 284))
@@ -35,17 +37,8 @@ func _draw() -> void:
 	var offset = (size - Vector2(190, 290) * scale_factor) * 0.5
 	draw_set_transform(offset, 0, Vector2.ONE * scale_factor)
 	if face_down:
-		var back = U.box(Color("1b142f"), 8, U.PURPLE, 0)
-		draw_style_box(back, Rect2(0, 0, 190, 290))
-		for i in range(12):
-			_stripe(Vector2(i * 24 - 150, 289), Vector2(i * 24 + 90, 1), Color("312346"))
-		draw_circle(Vector2(95, 134), 38, Color("261a3b"))
-		draw_arc(Vector2(95, 134), 40, 0, TAU, 48, U.BLUE, 1.4)
-		_text("CSTCG", Vector2(39, 144), 28, Color(U.RED, 0.5))
-		_text("CSTCG", Vector2(43, 141), 28, Color(U.BLUE, 0.5))
-		_text("CSTCG", Vector2(41, 143), 28, U.TEXT)
-		_text("PLAYER COLLECTION", Vector2(30, 216), 12, U.TEXT)
-		_text("REVEAL YOUR NEXT", Vector2(35, 237), 10, U.MUTED, U.BOLD)
+		Back.draw(self, back_origin)
+		draw_set_transform(Vector2.ZERO)
 		return
 	if card.is_empty():
 		return
@@ -61,8 +54,11 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(132, 8), Vector2(182, 8), Vector2(182, 93)]), Color(U.PURPLE, 0.09))
 	draw_line(Vector2(8, 24), Vector2(8, 169), Color(U.BLUE, 0.28), 1)
 	draw_line(Vector2(181, 87), Vector2(181, 170), Color(U.RED, 0.18), 1)
-	if ResourceLoader.exists(card.get("portrait", "")):
-		var portrait: Texture2D = load(card.portrait)
+	var portrait_path = str(card.get("portrait", ""))
+	if portrait_path.ends_with(".png") and not ResourceLoader.exists(portrait_path):
+		portrait_path = portrait_path.trim_suffix(".png") + ".jpg"
+	if ResourceLoader.exists(portrait_path):
+		var portrait: Texture2D = load(portrait_path)
 		var target = Rect2(51, 8, 130, 166)
 		var image_size = portrait.get_size()
 		var crop_size = Vector2(image_size.y * target.size.x / target.size.y, image_size.y)
