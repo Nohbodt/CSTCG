@@ -10,6 +10,21 @@ var compact = false
 var fresh = false
 var selected = false
 var back_origin = "legacy"
+var _portrait_path = ""
+var _portrait: Texture2D
+
+static func portrait_path_for(data: Dictionary) -> String:
+	var requested = str(data.get("portrait", ""))
+	if requested.is_empty():
+		return ""
+	# Prefer a later reviewed PNG while supporting the temporary WebP set and
+	# legacy JPEG paths retained in saved match snapshots.
+	var base = requested.get_basename()
+	for extension in [".png", ".webp", ".jpg"]:
+		var candidate = base + extension
+		if ResourceLoader.exists(candidate):
+			return candidate
+	return requested if ResourceLoader.exists(requested) else ""
 
 func _ready() -> void:
 	custom_minimum_size = custom_minimum_size.max(Vector2(120, 200) if compact else Vector2(175, 284))
@@ -54,17 +69,19 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(132, 8), Vector2(182, 8), Vector2(182, 93)]), Color(U.PURPLE, 0.09))
 	draw_line(Vector2(8, 24), Vector2(8, 169), Color(U.BLUE, 0.28), 1)
 	draw_line(Vector2(181, 87), Vector2(181, 170), Color(U.RED, 0.18), 1)
-	var portrait_path = str(card.get("portrait", ""))
-	if portrait_path.ends_with(".png") and not ResourceLoader.exists(portrait_path):
-		portrait_path = portrait_path.trim_suffix(".png") + ".jpg"
-	if ResourceLoader.exists(portrait_path):
-		var portrait: Texture2D = load(portrait_path)
+	var portrait_path = portrait_path_for(card)
+	if portrait_path != _portrait_path:
+		_portrait_path = portrait_path
+		# Canvas draw commands retain the texture RID, so keep the resource alive
+		# between redraws and until a stage has captured its printed card face.
+		_portrait = load(portrait_path) if not portrait_path.is_empty() else null
+	if _portrait != null:
 		var target = Rect2(51, 8, 130, 166)
-		var image_size = portrait.get_size()
+		var image_size = _portrait.get_size()
 		var crop_size = Vector2(image_size.y * target.size.x / target.size.y, image_size.y)
 		if crop_size.x > image_size.x:
 			crop_size = Vector2(image_size.x, image_size.x * target.size.y / target.size.x)
-		draw_texture_rect_region(portrait, target, Rect2((image_size - crop_size) * 0.5, crop_size))
+		draw_texture_rect_region(_portrait, target, Rect2((image_size - crop_size) * 0.5, crop_size))
 	else:
 		draw_circle(Vector2(109, 91), 48, Color(color, 0.07))
 		draw_arc(Vector2(109, 91), 49, 0, TAU, 60, Color(color, 0.4), 1.3)

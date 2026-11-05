@@ -153,7 +153,7 @@ func _build_shell() -> void:
 	motion_control.add_theme_font_size_override("font_size", 11)
 	motion_control.toggled.connect(_set_reduced_motion)
 	side.add_child(motion_control)
-	side.add_child(U.label("PACK BACKS / v0.5.0", 9, U.MUTED))
+	side.add_child(U.label("PLAYER PORTRAITS / v0.5.1", 9, U.MUTED))
 	var sidebar = U.panel(side, Color("140e24"), 16)
 	sidebar.custom_minimum_size.x = NAV_WIDTH
 	sidebar.size_flags_horizontal = Control.SIZE_FILL

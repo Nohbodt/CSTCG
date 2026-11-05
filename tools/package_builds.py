@@ -24,12 +24,14 @@ def package(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     version = subprocess.check_output(["godot", "--version"], text=True).strip()
     info = (
-        "CSTCG / Club Circuit — alpha 0.5 / pack-origin card backs\n"
+        "CSTCG / Club Circuit — alpha 0.5.1 / temporary player portraits\n"
         f"Source commit: {commit}\n"
         f"Engine: {version}\n"
         f"Packaged (UTC): {datetime.now(timezone.utc).isoformat()}\n"
         "Source origin-ledger/migration, two-size menu UI, pack backs/animation/resume, causal matches, and 12 map routes passed.\n"
         "Playable catalogue: 30 players / 2 alpha pack products. Series 1 remains a design kit.\n"
+        "Portraits: 25 temporary real photos / 5 monograms; source jerseys retained for later revision.\n"
+        "See LICENSES/PLAYER-PHOTOS.txt and player-photo-sources.json for photo credits.\n"
         "Linux executable and Windows PCK manager/map/live-match checks passed.\n"
         "Native Windows hardware execution was not performed.\n"
         "See TESTING.md for test steps and current prototype scope.\n"
@@ -38,6 +40,8 @@ def package(output: Path) -> None:
     build_info.write_text(info)
     common = [(ROOT / "TESTING.md", "TESTING.md"), (build_info, "BUILD_INFO.txt"),
               (ROOT / "builds/export-validation.json", "export-validation.json")]
+    common.extend([(ROOT / "assets/players/SOURCES.md", "LICENSES/PLAYER-PHOTOS.txt"),
+                   (ROOT / "assets/players/portrait_sources.json", "LICENSES/player-photo-sources.json")])
     for path in sorted((ROOT / "builds/notices").glob("*.txt")):
         common.append((path, "LICENSES/" + path.name))
     for path in sorted((ROOT / "assets/fonts").glob("LICENSE-*.txt")):
