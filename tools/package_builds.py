@@ -24,13 +24,14 @@ def package(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     version = subprocess.check_output(["godot", "--version"], text=True).strip()
     info = (
-        "CSTCG / Club Circuit — alpha 0.5.1 / temporary player portraits\n"
+        "CSTCG / Club Circuit — alpha 0.6 / Studio Foil\n"
         f"Source commit: {commit}\n"
         f"Engine: {version}\n"
         f"Packaged (UTC): {datetime.now(timezone.utc).isoformat()}\n"
         "Source origin-ledger/migration, two-size menu UI, pack backs/animation/resume, causal matches, and 12 map routes passed.\n"
         "Playable catalogue: 30 players / 2 alpha pack products. Series 1 remains a design kit.\n"
-        "Portraits: 25 temporary real photos / 5 monograms; source jerseys retained for later revision.\n"
+        "Portraits: 25 AI-edited source-photo cutouts / 5 monograms; plain rarity-colored jerseys.\n"
+        "Opening: click, keyboard or captured left-to-right drag; brighter torn edges, foil glare and curled seam geometry.\n"
         "See LICENSES/PLAYER-PHOTOS.txt and player-photo-sources.json for photo credits.\n"
         "Linux executable and Windows PCK manager/map/live-match checks passed.\n"
         "Native Windows hardware execution was not performed.\n"

@@ -4,6 +4,8 @@ extends Control
 
 signal animation_finished(kind: String)
 signal opening_step_changed(step: String)
+signal open_requested
+signal tear_interaction(progress: float, active: bool)
 
 const U = preload("res://scripts/ui.gd")
 const C = preload("res://scripts/catalog.gd")
@@ -13,6 +15,9 @@ const Back = preload("res://scripts/card_back_art.gd")
 const FOIL = preload("res://scripts/presentation/foil.gdshader")
 const PRINT = preload("res://scripts/presentation/printed_foil.gdshader")
 const FX = preload("res://scripts/presentation/opening_effects.gd")
+const Gesture = preload("res://scripts/presentation/pack_gesture.gd")
+const EDGE = preload("res://scripts/presentation/edge_glow.gdshader")
+const BACKDROP = preload("res://scripts/presentation/studio_backdrop.gdshader")
 
 var mode = "pack" # pack, opening, card
 var pack_id = "contender"
@@ -60,6 +65,10 @@ var flip_color = U.BLUE
 var seam_segments: Array[Node3D] = []
 var effects: Node3D
 var rip_line: MeshInstance3D
+var edge_materials: Array[ShaderMaterial] = []
+var gesture = Gesture.new()
+var pointer_source = -2 # -1 mouse; nonnegative touch index
+var interaction_overlay: Control
 
 static func fragment_count(level: int) -> int:
 	return 8 + level * 6
@@ -79,10 +88,14 @@ func _ready() -> void:
 	resized.connect(_resize_view)
 	gui_input.connect(_pointer_input)
 	mouse_exited.connect(func(): cursor = Vector2.ZERO)
+	if mode == "opening":
+		focus_mode = Control.FOCUS_ALL
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 func _build() -> void:
 	if not use_3d or DisplayServer.get_name() == "headless":
 		_build_fallback()
+		_build_overlay()
 		return
 	view = SubViewportContainer.new()
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -91,12 +104,24 @@ func _build() -> void:
 	add_child(view)
 	viewport = SubViewport.new()
 	viewport.own_world_3d = true
-	viewport.transparent_bg = true
+	# Additive halos need an opaque composition target to retain their light
+	# outside the pouch/card silhouette in the GL renderer.
+	viewport.transparent_bg = false
 	viewport.msaa_3d = Viewport.MSAA_2X
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	view.add_child(viewport)
 	world = Node3D.new()
 	viewport.add_child(world)
+	var backdrop = MeshInstance3D.new()
+	var backdrop_quad = QuadMesh.new()
+	backdrop_quad.size = Vector2(30, 16)
+	backdrop.mesh = backdrop_quad
+	backdrop.position.z = -3.0
+	var backdrop_material = ShaderMaterial.new()
+	backdrop_material.shader = BACKDROP
+	backdrop_material.set_shader_parameter("tint", tint)
+	backdrop.material_override = backdrop_material
+	world.add_child(backdrop)
 	var environment = WorldEnvironment.new()
 	environment.environment = Environment.new()
 	environment.environment.background_mode = Environment.BG_COLOR
@@ -109,7 +134,7 @@ func _build() -> void:
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.position = Vector3(0, 0.2, 12)
-	camera.size = 4.2 if mode != "card" else 3.5
+	camera.size = (4.6 if mode == "opening" else 4.2) if mode != "card" else 3.5
 	camera.near = 0.05
 	camera.far = 40
 	camera.current = true
@@ -149,6 +174,7 @@ func _build() -> void:
 		card_roots[0].scale = Vector3.ONE * 1.15
 		card_roots[0].rotation_degrees = Vector3(-3, 171 if viewing_back else -9, -2)
 	_resize_view()
+	_build_overlay()
 	queue_redraw()
 
 func _solid(color: Color, metallic: float = 0.0, unshaded: bool = false) -> StandardMaterial3D:
@@ -231,8 +257,15 @@ func _build_pack() -> void:
 		seam_segments.append(segment)
 		_box(segment, Vector3(0.1, 0.16, 0.12), Vector3.ZERO, crimp_material)
 		_box(segment, Vector3(0.025, 0.14, 0.025), Vector3(0, 0, 0.08), ridge_material)
+		# The underside becomes visible as each section curls away from the pouch.
+		_box(segment, Vector3(0.10, 0.24, 0.014), Vector3(0, -0.07, -0.04), _foil(Color("c4d3ee")))
 	rip_line = _box(pack_root, Vector3(1, 0.018, 0.02), Vector3(-1.2, 1.54, 0.19), _solid(tint.lerp(U.TEXT, 0.6), 0.0, true))
 	rip_line.visible = false
+	_edge_strip(pack_root, Vector2(2.5, 0.28), Vector3(0, 1.54, 0.24), true)
+	_edge_strip(seam, Vector2(2.5, 0.22), Vector3(0, -0.06, 0.20), true)
+	for side in [-1, 1]:
+		var edge = _edge_strip(pack_root, Vector2(3.2, 0.14), Vector3(side * 1.18, -0.08, 0.19), false)
+		edge.rotation.z = PI * 0.5
 	_box(pack_root, Vector3(2.38, 0.12, 0.1), Vector3(0, -1.72, 0), _foil(tint))
 	_box(world, Vector3(3.6, 0.10, 1.3), Vector3(0, -1.93, -0.1), _solid(Color("221635"), 0.6))
 	_box(world, Vector3(3.58, 0.018, 0.035), Vector3(0, -1.87, 0.56), _solid(tint.darkened(0.35), 0.0, true))
@@ -282,9 +315,28 @@ func _build_cards() -> void:
 		node.rotation.y = 0 if i < revealed else PI
 		node.visible = mode == "card" or not sealed
 
+func _edge_strip(parent: Node3D, extent: Vector2, position: Vector3, torn: bool) -> MeshInstance3D:
+	var mesh = MeshInstance3D.new()
+	var quad = QuadMesh.new()
+	quad.size = extent
+	mesh.mesh = quad
+	mesh.position = position
+	var material = ShaderMaterial.new()
+	material.shader = EDGE
+	material.set_shader_parameter("tint", tint)
+	material.set_meta("torn", torn)
+	mesh.material_override = material
+	edge_materials.append(material)
+	parent.add_child(mesh)
+	return mesh
+
 func _build_fragments() -> void:
 	for i in range(fragment_count(flair)):
-		var fragment = _box(world, Vector3(0.025, 0.35 + (i % 4) * 0.12, 0.025), Vector3.ZERO, _solid(tint if i % 3 else U.RED, 0.0, true))
+		var foil = i % 3 == 0
+		var extent = Vector3(0.17 + (i % 2) * 0.12, 0.3, 0.014) if foil else Vector3(0.025, 0.35 + (i % 4) * 0.12, 0.025)
+		var material: Material = _foil(Color("bfcbea")) if foil else _solid(tint if i % 2 else U.RED, 0.0, true)
+		var fragment = _box(world, extent, Vector3.ZERO, material)
+		fragment.set_meta("foil", foil)
 		shards.append(fragment)
 		fragment.visible = false
 
@@ -317,6 +369,35 @@ func _refresh_fallback() -> void:
 		remove_child(fallback)
 		fallback.queue_free()
 		_build_fallback()
+		if is_instance_valid(interaction_overlay):
+			move_child(interaction_overlay, get_child_count() - 1)
+
+func _build_overlay() -> void:
+	interaction_overlay = Control.new()
+	interaction_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	interaction_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	interaction_overlay.draw.connect(_draw_interaction_overlay.bind(interaction_overlay))
+	add_child(interaction_overlay)
+
+func _draw_interaction_overlay(canvas: Control) -> void:
+	canvas.draw_style_box(U.box(Color.TRANSPARENT, 8, U.BLUE if has_focus() else Color("3a2554"), 0), Rect2(Vector2.ZERO, size))
+	if mode != "opening" or not sealed:
+		return
+	var rect = pack_rect()
+	var from = rect.position + Vector2(rect.size.x * 0.03, rect.size.y * 0.055)
+	var finish = from + Vector2(rect.size.x * 0.94 * tear_progress, 0)
+	if not is_instance_valid(viewport) and tear_progress > 0.0:
+		for width in [18, 10, 5]:
+			canvas.draw_line(from, finish, Color(tint, 0.08 + tear_progress * 0.10), width, true)
+		canvas.draw_line(from, finish, tint.lerp(Color.WHITE, tear_progress), 2.0, true)
+	if phase in ["idle", "dragging"]:
+		var handle = from + Vector2(rect.size.x * 0.94 * tear_progress, 0)
+		canvas.draw_circle(handle, 6, Color(tint, 0.24))
+		canvas.draw_circle(handle, 2.5, Color.WHITE)
+		canvas.draw_line(handle + Vector2(9, -3), handle + Vector2(13, 0), tint, 1.5, true)
+		canvas.draw_line(handle + Vector2(13, 0), handle + Vector2(9, 3), tint, 1.5, true)
+		var hint = "CONTINUE → / CLICK TO FINISH" if tear_progress > 0 else "CLICK TO OPEN / DRAG →"
+		canvas.draw_string(U.BOLD, Vector2(rect.position.x, minf(size.y - 5, rect.end.y + 15)), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, U.MUTED)
 
 func _resize_view() -> void:
 	if is_instance_valid(viewport):
@@ -327,7 +408,139 @@ func _resize_view() -> void:
 
 func _pointer_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and not reduced_motion:
-		cursor = (event.position / size - Vector2.ONE * 0.5) * 2.0
+		cursor = (event.position / size.max(Vector2.ONE) - Vector2.ONE * 0.5) * 2.0
+	if mode != "opening" or not sealed:
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_press_pointer(event.position, -1)
+		elif gesture.held and pointer_source == -1:
+			_end_pointer(event.position)
+	elif event is InputEventMouseMotion and gesture.held and pointer_source == -1:
+		_move_pointer(event.position)
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_press_pointer(event.position, event.index)
+		elif gesture.held and pointer_source == event.index:
+			_end_pointer(event.position)
+	elif event is InputEventScreenDrag and gesture.held and pointer_source == event.index:
+		_move_pointer(event.position)
+	elif event is InputEventKey and event.pressed and not event.echo and event.is_action_pressed("ui_accept"):
+		if phase in ["idle", "dragging"]:
+			_cancel_pointer()
+			open_requested.emit()
+			accept_event()
+
+func pack_rect() -> Rect2:
+	if is_instance_valid(pack_root) and is_instance_valid(camera) and is_instance_valid(viewport):
+		var result = Rect2()
+		var first = true
+		for point in [Vector3(-1.23, -1.80, 0.2), Vector3(1.23, -1.80, 0.2), Vector3(1.23, 1.75, 0.2), Vector3(-1.23, 1.75, 0.2)]:
+			var projected = camera.unproject_position(pack_root.to_global(point)) * size / Vector2(viewport.size).max(Vector2.ONE)
+			result = Rect2(projected, Vector2.ZERO) if first else result.expand(projected)
+			first = false
+		return result.intersection(Rect2(Vector2.ZERO, size))
+	var extent = Vector2(240, 320) * minf(size.x / 240.0, size.y / 320.0)
+	return Rect2((size - extent) * 0.5, extent)
+
+func _press_pointer(position: Vector2, source: int) -> void:
+	if phase != "idle" or not sealed or not is_visible_in_tree() or not pack_rect().has_point(position):
+		return
+	if gesture.press(position, pack_rect().size.x * 0.82):
+		pointer_source = source
+		grab_focus()
+		accept_event()
+
+func _move_pointer(position: Vector2) -> void:
+	if not gesture.held or phase not in ["idle", "dragging"]:
+		return
+	if gesture.motion(position):
+		phase = "dragging"
+		last_animation = "open"
+		_begin_tear()
+	static_frames = 4
+	if gesture.dragging:
+		if not reduced_motion:
+			cursor = ((position / size.max(Vector2.ONE) - Vector2.ONE * 0.5) * 2.0).clamp(-Vector2.ONE, Vector2.ONE)
+		tear_progress = gesture.progress
+		charge = 0.0 if reduced_motion else 0.55 + tear_progress * 0.45
+		tear_interaction.emit(tear_progress, true)
+		if tear_progress >= 0.995:
+			_complete_drag()
+	queue_redraw()
+
+func _end_pointer(position: Vector2) -> void:
+	if not gesture.held:
+		return
+	_move_pointer(position)
+	if not gesture.held:
+		return
+	if not gesture.dragging and not pack_rect().has_point(position):
+		_cancel_pointer()
+		return
+	var action = gesture.release(position)
+	pointer_source = -2
+	if action == "open":
+		open_requested.emit()
+	elif action == "finish":
+		_complete_drag()
+	else:
+		_pause_drag()
+
+func _pause_drag() -> void:
+	if phase != "dragging":
+		return
+	phase = "idle"
+	_set_opening_step("paused")
+	if is_instance_valid(audio):
+		audio.stop()
+	static_frames = 4
+	tear_interaction.emit(tear_progress, false)
+	queue_redraw()
+
+func _cancel_pointer() -> void:
+	gesture.cancel()
+	pointer_source = -2
+	_pause_drag()
+
+func _complete_drag() -> void:
+	if phase != "dragging":
+		return
+	gesture.cancel()
+	pointer_source = -2
+	phase = "opening"
+	tear_progress = 1.0
+	charge = 1.0
+	tear_interaction.emit(tear_progress, true)
+	if reduced_motion:
+		_finish_animation()
+		return
+	active_tween = create_tween()
+	_append_burst(active_tween)
+
+func _input(event: InputEvent) -> void:
+	# Continue a captured drag when the pointer leaves the pack or its control.
+	if not gesture.held or not is_visible_in_tree():
+		return
+	if event is InputEventMouseMotion and pointer_source == -1:
+		if (event.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
+			_cancel_pointer()
+		else:
+			_move_pointer(get_global_transform_with_canvas().affine_inverse() * event.position)
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and pointer_source == -1:
+		_end_pointer(get_global_transform_with_canvas().affine_inverse() * event.position)
+		get_viewport().set_input_as_handled()
+	elif event is InputEventScreenDrag and event.index == pointer_source:
+		_move_pointer(get_global_transform_with_canvas().affine_inverse() * event.position)
+		get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch and not event.pressed and event.index == pointer_source:
+		_end_pointer(get_global_transform_with_canvas().affine_inverse() * event.position)
+		get_viewport().set_input_as_handled()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT and gesture.held:
+		_cancel_pointer()
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree():
@@ -357,6 +570,10 @@ func _process(delta: float) -> void:
 			material.set_shader_parameter("phase", foil_phase + (0.0 if reduced_motion else clock * 0.15))
 		for material in printed_materials:
 			material.set_shader_parameter("phase", rig.rotation.y * 3 + (0.0 if reduced_motion else clock * 0.22))
+			material.set_shader_parameter("energy", 0.0 if reduced_motion else charge + burst)
+		for material in edge_materials:
+			material.set_shader_parameter("progress", tear_progress if material.get_meta("torn") else 1.0)
+			material.set_shader_parameter("energy", 0.0 if reduced_motion else 0.06 + charge * 0.35 + pow(tear_progress, 1.7) * (2.0 + flair * 0.5) + burst * 2.5)
 		light.light_energy = 2.0 + charge * (3.0 + flair) + burst * (3.0 + flair)
 		_update_tear()
 		if is_instance_valid(effects):
@@ -367,14 +584,20 @@ func _process(delta: float) -> void:
 				"flip_age": flip_age, "flip_origin": flip_origin, "flip_color": flip_color, "reduced": reduced_motion})
 		for i in range(shards.size()):
 			var fragment = shards[i]
-			fragment.visible = (charge + burst > 0.05) and not reduced_motion
+			fragment.visible = (charge + burst > 0.05) and not reduced_motion and (not fragment.get_meta("foil") or explosion_age >= 0)
 			var angle = i * TAU / shards.size() + clock * (0.7 + flair * 0.15)
 			var outward = maxf(0, explosion_age)
 			var radius = 1.8 + outward * 5.0 + (i % 3) * 0.13
 			fragment.position = Vector3(cos(angle) * radius, sin(angle) * (1.2 + outward * 3) - outward * outward, 0.4 + sin(angle * 2) * 0.4)
 			fragment.rotation.z = angle - PI * 0.25
+			if fragment.get_meta("foil"):
+				fragment.rotation.x = clock * 3 + i
+				fragment.rotation.y = clock * 4 + i * 0.7
 			fragment.scale.y = 0.5 + charge + burst
 	queue_redraw()
+
+	if is_instance_valid(interaction_overlay):
+		interaction_overlay.queue_redraw()
 
 func _draw() -> void:
 	draw_style_box(U.box(Color("100b1d"), 8, Color("3a2554"), 0), Rect2(Vector2.ZERO, size))
@@ -396,47 +619,54 @@ func _draw() -> void:
 func play_open() -> void:
 	if phase != "idle" or not sealed:
 		return
+	gesture.cancel()
+	pointer_source = -2
 	phase = "opening"
 	last_animation = "open"
 	if reduced_motion:
 		_play_sound("card_reveal")
 		_finish_animation()
 		return
-	_set_opening_step("charging")
-	if flair > 0:
-		_play_sound("elite_charge")
 	active_tween = create_tween()
-	var anticipation = 0.4 + flair * 0.2
-	active_tween.tween_property(self, "charge", 0.6, anticipation).set_trans(Tween.TRANS_SINE)
-	if is_instance_valid(pack_root):
-		active_tween.parallel().tween_property(pack_root, "rotation_degrees:y", 4.0 + flair * 5.0, anticipation)
+	if tear_progress <= 0.0:
+		_set_opening_step("charging")
+		if flair > 0:
+			_play_sound("elite_charge")
+		var anticipation = 0.4 + flair * 0.2
+		active_tween.tween_property(self, "charge", 0.6, anticipation).set_trans(Tween.TRANS_SINE)
+		if is_instance_valid(pack_root):
+			active_tween.parallel().tween_property(pack_root, "rotation_degrees:y", 4.0 + flair * 5.0, anticipation)
+			active_tween.parallel().tween_property(pack_root, "rotation_degrees:x", -8.0, anticipation)
 	active_tween.tween_callback(_begin_tear)
-	var tear_duration = 1.35 + flair * 0.35
-	active_tween.tween_property(self, "tear_progress", 1.0, tear_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	active_tween.parallel().tween_property(self, "charge", 1.0, tear_duration)
-	active_tween.tween_callback(_ignite_burst)
-	active_tween.tween_property(self, "burst", 1.0 + flair * 0.2, 0.12)
+	var duration = maxf(0.18, (1.35 + flair * 0.35) * (1.0 - tear_progress))
+	active_tween.tween_property(self, "tear_progress", 1.0, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	active_tween.parallel().tween_property(self, "charge", 1.0, duration)
+	_append_burst(active_tween)
+
+func _append_burst(sequence: Tween) -> void:
+	sequence.tween_callback(_ignite_burst)
+	sequence.tween_property(self, "burst", 1.0 + flair * 0.2, 0.12)
 	if is_instance_valid(pack_root):
-		active_tween.parallel().tween_property(seam, "position", Vector3(0.8, 2.3, 0.6), 0.12)
-		active_tween.parallel().tween_property(pack_root, "scale", Vector3.ONE * 1.06, 0.12)
-	active_tween.tween_callback(_start_fan)
+		sequence.parallel().tween_property(seam, "position", Vector3(0.8, 2.3, 0.6), 0.12)
+		sequence.parallel().tween_property(pack_root, "scale", Vector3.ONE * 1.06, 0.12)
+	sequence.tween_callback(_start_fan)
 	var fan_duration = 0.58 + flair * 0.08
 	if is_instance_valid(pack_root):
-		active_tween.tween_property(pack_root, "position", Vector3(0, -4.2, -1.3), fan_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-		active_tween.parallel().tween_property(pack_root, "rotation_degrees:z", 32.0, fan_duration)
-		active_tween.parallel().tween_property(seam, "position", Vector3(2.2, 4.3, 1.2), fan_duration)
-		active_tween.parallel().tween_property(seam, "rotation_degrees:z", -65.0, fan_duration)
-		active_tween.parallel().tween_property(camera, "size", _fan_camera_size(), fan_duration)
+		sequence.tween_property(pack_root, "position", Vector3(0, -4.2, -1.3), fan_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		sequence.parallel().tween_property(pack_root, "rotation_degrees:z", 32.0, fan_duration)
+		sequence.parallel().tween_property(seam, "position", Vector3(2.2, 4.3, 1.2), fan_duration)
+		sequence.parallel().tween_property(seam, "rotation_degrees:z", -65.0, fan_duration)
+		sequence.parallel().tween_property(camera, "size", _fan_camera_size(), fan_duration)
 		for i in range(card_roots.size()):
-			active_tween.parallel().tween_property(card_roots[i], "position", _fan_position(i), fan_duration).set_delay(i * 0.025).set_trans(Tween.TRANS_BACK)
-			active_tween.parallel().tween_property(card_roots[i], "scale", Vector3.ONE, fan_duration).set_delay(i * 0.025)
-			active_tween.parallel().tween_property(card_roots[i], "rotation_degrees:z", _fan_roll(i), fan_duration)
+			sequence.parallel().tween_property(card_roots[i], "position", _fan_position(i), fan_duration).set_delay(i * 0.025).set_trans(Tween.TRANS_BACK)
+			sequence.parallel().tween_property(card_roots[i], "scale", Vector3.ONE, fan_duration).set_delay(i * 0.025)
+			sequence.parallel().tween_property(card_roots[i], "rotation_degrees:z", _fan_roll(i), fan_duration)
 	else:
-		active_tween.tween_interval(fan_duration + 0.1)
-	active_tween.parallel().tween_property(self, "burst", 0.0, fan_duration + 0.1)
-	active_tween.parallel().tween_property(self, "charge", 0.0, fan_duration + 0.1)
-	active_tween.tween_interval(0.25 + flair * 0.06)
-	active_tween.tween_callback(_finish_animation)
+		sequence.tween_interval(fan_duration + 0.1)
+	sequence.parallel().tween_property(self, "burst", 0.0, fan_duration + 0.1)
+	sequence.parallel().tween_property(self, "charge", 0.0, fan_duration + 0.1)
+	sequence.tween_interval(0.25 + flair * 0.06)
+	sequence.tween_callback(_finish_animation)
 
 func _set_opening_step(step: String) -> void:
 	opening_step = step
@@ -447,14 +677,14 @@ func _begin_tear() -> void:
 	_play_sound("pack_tear", 2.05 / (1.35 + flair * 0.35))
 
 func _update_tear() -> void:
-	if opening_step != "tearing" and opening_step != "bursting":
+	if opening_step not in ["tearing", "paused", "bursting"]:
 		if is_instance_valid(rip_line):
 			rip_line.visible = false
 		return
 	for i in range(seam_segments.size()):
-		var peeled = clampf((tear_progress * 24 - i) * 0.4, 0.0, 1.0)
-		seam_segments[i].position = Vector3(-1.15 + i * 0.1, peeled * (0.23 + 0.15 * sin(i * 0.18)), peeled * 0.22)
-		seam_segments[i].rotation_degrees.z = -peeled * 15
+		var peeled = clampf((tear_progress * (seam_segments.size() + 2) - i) * 0.5, 0.0, 1.0)
+		seam_segments[i].position = Vector3(-1.15 + i * 0.1, peeled * (0.30 + 0.16 * sin(i * 0.18)), peeled * 0.38)
+		seam_segments[i].rotation_degrees = Vector3(-peeled * 88, peeled * 9, -peeled * 21)
 	rip_line.visible = tear_progress > 0.01
 	rip_line.scale.x = maxf(0.01, tear_progress * 2.4)
 	rip_line.position.x = -1.2 + tear_progress * 1.2
@@ -569,6 +799,9 @@ func _finish_animation() -> void:
 		revealed = pending_target
 	_set_fan()
 	phase = "idle"
+	gesture.reset()
+	pointer_source = -2
+	mouse_default_cursor_shape = Control.CURSOR_ARROW
 	charge = 0.0
 	burst = 0.0
 	tear_progress = 0.0
@@ -608,12 +841,14 @@ func set_3d_enabled(value: bool) -> void:
 	rip_line = null
 	camera = null
 	fallback = null
+	interaction_overlay = null
 	audio = null
 	card_roots.clear()
 	seam_segments.clear()
 	shards.clear()
 	foil_materials.clear()
 	printed_materials.clear()
+	edge_materials.clear()
 	_build()
 
 func _play_sound(id: String, pitch: float = 1.0) -> void:
@@ -631,3 +866,5 @@ func _exit_tree() -> void:
 	if active_tween:
 		active_tween.kill()
 	phase = "closed"
+	gesture.cancel()
+	pointer_source = -2

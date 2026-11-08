@@ -33,6 +33,7 @@ run_check() {
 
 run_check "" --editor --import
 run_check "CSTCG_TESTS:" --script res://tests/test_game.gd -- --ephemeral
+run_check "CSTCG_GESTURE_TESTS:" --script res://tests/test_pack_gesture.gd -- --ephemeral
 run_check "CSTCG_UI_SMOKE:" --quit-after 900 -- --ephemeral --ui-smoke
 run_check "CSTCG_PACK_UI:" --fixed-fps 60 --quit-after 2200 -- --ephemeral --pack-smoke
 run_check "CSTCG_SPATIAL_TESTS:" --script res://tests/test_spatial.gd -- --ephemeral

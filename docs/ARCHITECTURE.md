@@ -15,6 +15,8 @@
 | `scripts/presentation/*.gdshader` | GL Compatibility foil/interference treatments; printed text protected from effects |
 | `scripts/card_art.gd`, `pack_art.gd`, `arena_art.gd` | Optional photographic cards with neutral fallback, printed pack art, rendered Dust II menu artwork |
 | `scripts/card_back_art.gd` | Pack-specific back geometry/typography shared by openings, 3D inspection and 2D fallback |
+| `scripts/card_front_art.gd` | Faceted Studio Foil face artwork, live text and fitted transparent portraits |
+| `scripts/presentation/pack_gesture.gd` | Pure monotonic click/drag state with capture ownership held by the stage |
 | `tools/capture_menu_map.gd`, `assets/ui/dust2_preview.png` | Reproducible menu thumbnail captured from the supplied 3D map |
 | `scripts/spatial/dust_world.gd` | Uploaded map, shared render/collision faces, derived navigation, physical movement and ray queries |
 | `scripts/spatial/spatial_match_sim.gd` | Fixed-tick causal ten-agent match engine; combat, utility, bomb, equipment and MR12/MR3 |
@@ -40,6 +42,8 @@ Pack art and card faces are rendered once into local textures, with printed valu
 Alpha 0.5.1 bundles 25 temporary real-player photos with pinned source metadata in `assets/players/portrait_sources.json`; five players retain neutral monograms. `CardArt.portrait_path_for()` resolves PNG, WebP and JPEG by the same canonical basename, so a reviewed PNG can replace temporary art and old JPEG paths in frozen fixtures still resolve. All card surfaces share this renderer. Photo loading has no network, inventory or simulation dependency. `tools/capture_player_gallery.gd` renders the roster and verifies texture decoding, coverage and legacy-path compatibility.
 
 ## Transaction boundaries
+
+Alpha 0.6 routes wrapper clicks/keyboard through `PackOpening._tear()`; captured mouse/touch drags update the stage's visual tear before joining the same burst/fan sequence. The gesture helper has no access to Game, saves, time or RNG. Partial tears pause within the live dialog; focus cancellation releases input ownership and preserves that visual progress. Closing discards only the wrapper animation. All card acquisition/reveal transaction boundaries below remain intact. Transparent portrait textures stay referenced by `CardArt`, whose shared front renderer is also baked into the 3D prints. Source and edited portrait hashes/credits are recorded separately.
 
 Alpha 0.5 adds schema-3 `card_origins` quantities per definition/source and `squad_origins` for the active copies. Aggregate card counts remain compatible with existing presentation/economy code. `_valid_origins` requires ledger sums to match inventory and the lineup's chosen sources to exist. Grant/removal helpers update both counts inside the same existing snapshot/commit boundary. Release and equip can select a source explicitly. AI receipts without origin information use a labelled unknown source rather than an invented pack. Card backs never modify the profile or simulation inputs.
 

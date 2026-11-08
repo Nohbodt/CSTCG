@@ -3,7 +3,7 @@ extends RefCounted
 
 const ROLES = ["ENTRY", "AWPER", "IGL", "SUPPORT", "LURKER"]
 const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
-const COLORS = [Color("a2adc6"), Color("53aeff"), Color("a66bff"), Color("eee4ff")]
+const COLORS = [Color("a2adc6"), Color("53aeff"), Color("a66bff"), Color("edcc8f")]
 const QUICK_SELL = [8, 20, 55, 150]
 const CARD_ORIGINS = ["starter", "contender", "elite", "trade", "legacy"]
 const ORIGIN_LABELS = {"starter": "Foundation / starter", "contender": "Contender", "elite": "Elite Circuit", "trade": "Trade / pack not recorded", "legacy": "Archive / pack not recorded"}

@@ -47,9 +47,11 @@ func _ready() -> void:
 	stage.reduced_motion = reduced_motion
 	stage.use_3d = use_3d
 	stage.sound_enabled = sound_enabled
-	stage.custom_minimum_size.y = 260 if get_viewport_rect().size.y < 820 else 345
+	stage.custom_minimum_size.y = 280 if get_viewport_rect().size.y < 820 else 390
 	stage.animation_finished.connect(_animation_done)
 	stage.opening_step_changed.connect(_update_opening_status)
+	stage.open_requested.connect(_tear)
+	stage.tear_interaction.connect(_drag_changed)
 	add_child(stage)
 	names = U.hbox(8)
 	add_child(names)
@@ -81,7 +83,9 @@ func _sync() -> void:
 		return
 	if stage.sealed:
 		actions.add_child(U.button("Tear open   →", _tear, true))
-		footer.text = "Your cards are already secured. Close and resume whenever you like."
+		footer.text = "Click the pack, or hold and drag → across its seal. Enter / Space opens it too. Your cards are safe if you close this window."
+		if stage.tear_progress > 0.0:
+			status.text = "SEAL %d%% TORN / Continue dragging, or click to finish." % roundi(stage.tear_progress * 100)
 		return
 	for i in range(pending.cards.size()):
 		var index = i
@@ -111,6 +115,17 @@ func _tear() -> void:
 	_sync()
 	stage.play_open()
 
+func _drag_changed(_progress: float, active: bool) -> void:
+	var changed = transition != active
+	transition = active
+	transition_kind = "open"
+	if changed or stage.phase != "dragging":
+		_sync()
+	else:
+		_update_opening_status(stage.opening_step)
+	if active and stage.phase == "dragging":
+		footer.text = "Drag → to tear the seal. Release to pause; click to finish. Your cards are secured."
+
 func _reveal(all_cards: bool) -> void:
 	if transition:
 		return
@@ -124,6 +139,9 @@ func _reveal(all_cards: bool) -> void:
 
 func _update_opening_status(step: String) -> void:
 	if not transition or not is_instance_valid(status):
+		return
+	if stage.phase == "dragging":
+		status.text = "TEAR THE SEAL / %d%% / Drag →" % roundi(stage.tear_progress * 100)
 		return
 	var captions = {"idle": "BREAKING THE SEAL", "charging": "CHARGING THE FOIL", "tearing": "SLOW TEAR", "bursting": "ENERGY RELEASE", "fanning": "YOUR NEXT SIGNINGS"}
 	status.text = ("REVEALING YOUR SIGNINGS" if transition_kind == "reveal" else captions.get(step, "BREAKING THE SEAL")) + " / Your cards are secured."

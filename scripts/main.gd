@@ -153,7 +153,7 @@ func _build_shell() -> void:
 	motion_control.add_theme_font_size_override("font_size", 11)
 	motion_control.toggled.connect(_set_reduced_motion)
 	side.add_child(motion_control)
-	side.add_child(U.label("PLAYER PORTRAITS / v0.5.1", 9, U.MUTED))
+	side.add_child(U.label("STUDIO FOIL / v0.6.0", 9, U.MUTED))
 	var sidebar = U.panel(side, Color("140e24"), 16)
 	sidebar.custom_minimum_size.x = NAV_WIDTH
 	sidebar.size_flags_horizontal = Control.SIZE_FILL
@@ -1278,7 +1278,16 @@ func _pack_smoke() -> void:
 			_smoke_expect(stage.shards.size() == Collectible.fragment_count(stage.flair), "premium fragment budget is applied")
 			_smoke_expect(stage.effects.spark_pool.multimesh.instance_count >= 72, "3D burst has a real spark pool")
 		await _capture("%s_00_sealed" % id)
-		_smoke_press("Tear open   →")
+		_smoke_action_visible("Tear open   →")
+		if id == "contender":
+			var point: Vector2 = stage.pack_rect().get_center()
+			_pack_mouse(stage, point, true)
+			_pack_mouse(stage, point, false)
+		else:
+			var key = InputEventKey.new()
+			key.keycode = KEY_ENTER
+			key.pressed = true
+			stage.gui_input.emit(key)
 		_smoke_expect(opening.transition and stage.phase == "opening", "tear starts a real presentation transition")
 		# Repeated inputs cannot start a second open or reveal.
 		opening._tear()
@@ -1328,6 +1337,51 @@ func _pack_smoke() -> void:
 	navigate(2)
 	_open_pack("contender")
 	var opening = modal.find_child("PackOpening", true, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var input_stage = opening.stage
+	var input_saved = Game.data.duplicate(true)
+	var input_rng = Game.rng.state
+	_pack_mouse(input_stage, Vector2.ONE, true)
+	_pack_mouse(input_stage, Vector2.ONE, false)
+	_smoke_expect(not opening.transition and input_stage.sealed, "outside clicks do not start an opening")
+	var rect: Rect2 = input_stage.pack_rect()
+	_smoke_expect(rect.has_area(), "the displayed pack has a real pointer hit area")
+	var start = rect.position + rect.size * Vector2(0.12, 0.10)
+	_pack_mouse(input_stage, start, true)
+	_pack_drag(input_stage, start + Vector2(rect.size.x * 0.35, 0))
+	_smoke_expect(opening.transition and input_stage.phase == "dragging", "drag enters direct seal control")
+	_pack_mouse(input_stage, start + Vector2(rect.size.x * 0.35, 0), false)
+	var partial: float = input_stage.tear_progress
+	_smoke_expect(partial > 0.3 and partial < 0.6 and not opening.transition and input_stage.sealed, "release pauses a partial tear")
+	await _capture("interactive_01_paused")
+	_pack_mouse(input_stage, start, true)
+	_pack_drag(input_stage, start - Vector2(30, 0))
+	_smoke_expect(is_equal_approx(input_stage.tear_progress, partial), "backwards drag cannot rewind the seal")
+	input_stage._notification(NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+	_smoke_expect(not input_stage.gesture.held and not opening.transition and input_stage.sealed, "focus loss pauses without opening")
+	var touch = InputEventScreenTouch.new()
+	touch.index = 3
+	touch.position = start
+	touch.pressed = true
+	input_stage.gui_input.emit(touch)
+	var second = InputEventScreenTouch.new()
+	second.index = 8
+	second.position = start
+	second.pressed = true
+	input_stage.gui_input.emit(second)
+	_smoke_expect(input_stage.pointer_source == 3, "second touch cannot steal the seal")
+	var swipe = InputEventScreenDrag.new()
+	swipe.index = 3
+	swipe.position = input_stage.get_global_transform_with_canvas() * (start + Vector2(rect.size.x, 0))
+	input_stage._input(swipe)
+	_smoke_expect(input_stage.phase == "opening" and opening.transition and input_stage.revealed == 0, "completed touch swipe outside the pack starts its burst")
+	input_stage.skip_animation()
+	_smoke_expect(not input_stage.sealed and not input_stage.gesture.held, "skip finishes the wrapper and releases pointer capture")
+	_smoke_expect(Game.data == input_saved and Game.rng.state == input_rng, "all pointer gestures preserve inventory, results and RNG")
+	_close_modal()
+	_show_pack(true)
+	opening = modal.find_child("PackOpening", true, false)
 	for step in ["tearing", "bursting"]:
 		opening._tear()
 		await _wait_opening_step(opening.stage, step)
@@ -1360,8 +1414,22 @@ func _pack_smoke() -> void:
 	_set_3d_collectibles(false)
 	_smoke_expect(is_instance_valid(opening.stage.fallback), "lightweight previews have a real static fallback")
 	_smoke_press("Build your five   →")
-	print("CSTCG_PACK_UI: slow tear before burst, standard/premium glow and sparks, skip, tear/burst/flip resume, inspection, reduced motion, fallback; %d failures" % smoke_failures)
+	print("CSTCG_PACK_UI: click, keyboard, paused drag, focus loss, touch capture, bright tear, standard/premium effects, skip/resume, inspection, reduced motion, fallback; %d failures" % smoke_failures)
 	get_tree().quit(0 if smoke_failures == 0 else 1)
+
+func _pack_mouse(stage: Control, point: Vector2, pressed: bool) -> void:
+	var event = InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.position = point
+	event.pressed = pressed
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+	stage.gui_input.emit(event)
+
+func _pack_drag(stage: Control, point: Vector2) -> void:
+	var event = InputEventMouseMotion.new()
+	event.position = point
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT
+	stage.gui_input.emit(event)
 
 func _wait_presentation(stage: Control, capture_name: String) -> void:
 	var finished = false

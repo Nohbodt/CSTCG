@@ -28,6 +28,9 @@ func _capture() -> void:
 		installed += 1
 		var texture = load(path)
 		assert(texture is Texture2D and texture.get_width() > 0 and texture.get_height() > 0)
+		var image: Image = texture.get_image()
+		assert(image.get_pixel(0, 0).a < 0.01 and image.get_pixel(image.get_width() - 1, 0).a < 0.01, "Portrait background is not transparent: " + card.id)
+		assert(image.get_pixel(image.get_width() / 2, image.get_height() / 2).a > 0.8, "Portrait has no opaque subject: " + card.id)
 		var legacy = card.duplicate()
 		legacy.portrait = str(card.portrait).get_basename() + ".jpg"
 		assert(Card.portrait_path_for(legacy) == path, "Legacy snapshot lost its photo: " + card.id)
@@ -45,8 +48,8 @@ func _capture() -> void:
 	canvas.add_child(margin)
 	var layout = U.vbox(10)
 	margin.add_child(layout)
-	layout.add_child(U.label("CSTCG / PLAYER PORTRAITS", 30, U.TEXT, true))
-	layout.add_child(U.label("Alpha 0.5.1 / %d real photos, %d monograms / temporary art for playtesting" % [installed, C.cards().size() - installed], 14, U.MUTED))
+	layout.add_child(U.label("CSTCG / STUDIO CARD COLLECTION", 30, U.TEXT, true))
+	layout.add_child(U.label("Alpha 0.6 / %d source-photo cutouts, %d monograms / rarity-colored jerseys" % [installed, C.cards().size() - installed], 14, U.MUTED))
 	var grid = GridContainer.new()
 	grid.columns = 6 if all_players else 4
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -62,7 +65,7 @@ func _capture() -> void:
 		tile.add_child(art)
 		if not Card.portrait_path_for(art.card).is_empty():
 			photo_controls.append(art)
-		var label = U.label("MONOGRAM" if Card.portrait_path_for(art.card).is_empty() else "TEMPORARY PHOTO", 10, U.MUTED)
+		var label = U.label("MONOGRAM" if Card.portrait_path_for(art.card).is_empty() else "EDITED PORTRAIT", 10, U.MUTED)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tile.add_child(label)
 		grid.add_child(tile)
@@ -82,7 +85,7 @@ func _capture() -> void:
 				var point = art.global_position + offset + Vector2(60 + x * 26, 28 + y * 31) * factor
 				colors[captured.get_pixelv(Vector2i(point)).to_rgba32()] = true
 		assert(colors.size() > 8, "Portrait rendered blank: " + str(art.card.id))
-	var output = "res://docs/screenshots/portraits/player-cards" + ("-all" if all_players else "") + ".png"
+	var output = "res://docs/screenshots/studio-0.6/player-cards" + ("-all" if all_players else "") + ".png"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--output="):
 			output = arg.trim_prefix("--output=")
